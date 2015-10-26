@@ -40,8 +40,8 @@ namespace RampUp.Tests.Buffers
         public void WhenSeekingFromBeginning_ThenMovingFromBeginning()
         {
             const int c = 100;
-            _stream.Write(new byte[c],0, c);
-            
+            _stream.Write(new byte[c], 0, c);
+
             const int p = 23;
             _stream.Seek(p, SeekOrigin.Begin);
             Assert.AreEqual(p, _stream.Position);
@@ -136,7 +136,7 @@ namespace RampUp.Tests.Buffers
             var buffer = new byte[2];
             var read = _stream.Read(buffer, 0, 2);
             Assert.AreEqual(0, read);
-            CollectionAssert.AreEquivalent(new byte[] {0, 0}, buffer);
+            CollectionAssert.AreEquivalent(new byte[] { 0, 0 }, buffer);
         }
 
         [Test]
@@ -151,52 +151,62 @@ namespace RampUp.Tests.Buffers
             Assert.AreEqual(-1, read);
         }
 
-        //[TestFixture]
-        //public class when_seeking_in_the_stream : has_buffer_pool_fixture
-        //{
-        //    [Test]
-        //    public void from_begin_sets_relative_to_beginning()
-        //    {
-        //        BufferPoolStream stream = new BufferPoolStream(BufferPool);
-        //        stream.Write(new byte[500], 0, 500);
-        //        stream.Seek(22, SeekOrigin.Begin);
-        //        Assert.AreEqual(22, stream.Position);
-        //    }
 
-        //    [Test]
-        //    public void from_end_sets_relative_to_end()
-        //    {
-        //        BufferPoolStream stream = new BufferPoolStream(BufferPool);
-        //        stream.Write(new byte[500], 0, 500);
-        //        stream.Seek(-100, SeekOrigin.End);
-        //        Assert.AreEqual(400, stream.Position);
-        //    }
+        [Test]
+        public void WhenSeekFromBeginningPositionIsSetFromBeginning()
+        {
+            const int length = 100;
+            const int seekBy = 22;
+            _stream.Write(new byte[length], 0, length);
+            _stream.Seek(seekBy, SeekOrigin.Begin);
+            Assert.AreEqual(seekBy, _stream.Position);
+        }
 
-        //    [Test]
-        //    public void from_current_sets_relative_to_current()
-        //    {
-        //        BufferPoolStream stream = new BufferPoolStream(BufferPool);
-        //        stream.Write(new byte[500], 0, 500);
-        //        stream.Seek(-2, SeekOrigin.Current);
-        //        stream.Seek(1, SeekOrigin.Current);
-        //        Assert.AreEqual(499, stream.Position);
-        //    }
+        [Test]
+        public void WhenSeekFromEndPositionIsSetFromEnd()
+        {
+            const int length = 100;
+            const int seekBy = -22;
+            _stream.Write(new byte[length], 0, length);
+            _stream.Seek(seekBy, SeekOrigin.End);
+            Assert.AreEqual(length + seekBy, _stream.Position);
+        }
 
-        //    [Test, ExpectedException(typeof(ArgumentOutOfRangeException))]
-        //    public void a_negative_position_throws_an_argumentexception()
-        //    {
-        //        BufferPoolStream stream = new BufferPoolStream(BufferPool);
-        //        stream.Seek(-1, SeekOrigin.Begin);
-        //    }
+        [TestCase(-1L, ExpectedException = typeof(ArgumentException))]
+        [TestCase(0L)]
+        [TestCase(1L)]
+        [TestCase(1L)]
+        [TestCase(8012L)]
+        public void SetLength(long length)
+        {
+            _stream.SetLength(length);
 
-        //    [Test, ExpectedException(typeof(ArgumentOutOfRangeException))]
-        //    public void seeking_past_end_of_stream_throws_an_argumentexception()
-        //    {
-        //        BufferPoolStream stream = new BufferPoolStream(BufferPool);
-        //        stream.Write(new byte[500], 0, 500);
-        //        stream.Seek(501, SeekOrigin.Begin);
-        //    }
-        //}
+            Assert.AreEqual(length, _stream.Length);
+        }
 
+        [TestCase(new object[] { new[] { 10, 200, 400, 800, 1000, 2000, 4000 } }, TestName = "Short to long elements")]
+        [TestCase(new object[] { new[] { 4094, 1, 2, 4090, 127 } }, TestName = "Buffer boundaries")]
+        public void ReadWrite(int[] lengths)
+        {
+            var total = lengths.Sum();
+            var random = new Random(total);
+
+            var bytes = new byte[total];
+            random.NextBytes(bytes);
+
+            var offset = 0;
+            foreach (var length in lengths)
+            {
+                _stream.Write(bytes, offset, length);
+                offset += length;
+            }
+
+            _stream.Seek(0, SeekOrigin.Begin);
+
+            var ms = new MemoryStream(total);
+            _stream.CopyTo(ms, 13);
+
+            CollectionAssert.AreEqual(bytes, ms.ToArray());
+        }
     }
 }

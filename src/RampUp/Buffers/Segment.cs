@@ -205,7 +205,11 @@ namespace RampUp.Buffers
 
                 if (value == 0)
                 {
-                    _pool.Push(_head);
+                    if (_head != null)
+                    {
+                        _pool.Push(_head);
+                    }
+
                     _head = null;
                     _tail = null;
                     _length = 0;
@@ -314,8 +318,6 @@ namespace RampUp.Buffers
 
             public override void Write(byte[] buffer, int offset, int count)
             {
-                var bytesTillTheStreamEnd = _capacity - _position;
-
                 var bytesLeft = _capacity - _position;
                 var bytesToAlloc = count - bytesLeft;
                 if (bytesToAlloc > 0)
@@ -330,28 +332,28 @@ namespace RampUp.Buffers
                 var currentSegment = FindSegment(index);
 
                 // intial segment selected, do writing
-                var currentSegmentIndex = _pool.GetIndexInSegment(_position);
                 var toWrite = count;
                 do
                 {
+                    var currentSegmentIndex = _pool.GetIndexInSegment(_position);
                     var spaceToWrite = _pool.SegmentSize - currentSegmentIndex;
                     var arraySegment = currentSegment._segment;
 
                     spaceToWrite = spaceToWrite > toWrite ? toWrite : spaceToWrite;
                     if (spaceToWrite > 0)
                     {
-                        Buffer.BlockCopy(buffer, offset, arraySegment.Array, arraySegment.Offset, spaceToWrite);
+                        Buffer.BlockCopy(buffer, offset, arraySegment.Array, arraySegment.Offset + currentSegmentIndex, spaceToWrite);
                     }
 
                     toWrite -= spaceToWrite;
                     _position += spaceToWrite;
+                    offset += spaceToWrite;
                     currentSegment = currentSegment._next;
-                    currentSegmentIndex = 0;
                 } while (toWrite > 0);
 
-                if (count > bytesTillTheStreamEnd)
+                if (_position > _length)
                 {
-                    _length += count - bytesTillTheStreamEnd;
+                    _length = _position;
                 }
             }
 
