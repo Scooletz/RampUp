@@ -157,13 +157,13 @@ namespace RampUp.Buffers
                 return (int)(position & _inSegmentMask);
             }
 
-            public System.IO.Stream GetStream()
+            public Stream GetStream()
             {
                 return new Stream(this);
             }
         }
 
-        private sealed class Stream : System.IO.Stream
+        public sealed class Stream : System.IO.Stream
         {
             private readonly Pool _pool;
             private Segment _head = null;
@@ -386,6 +386,37 @@ namespace RampUp.Buffers
                 if (bytesTillTheStreamEnd == 0)
                 {
                     _length += 1;
+                }
+            }
+
+            public new void CopyTo(System.IO.Stream destination)
+            {
+                if (destination == null)
+                    throw new ArgumentNullException("destination");
+                if (!CanRead && !CanWrite)
+                    throw new ObjectDisposedException(null, "Stream is closed");
+                if (!destination.CanRead && !destination.CanWrite)
+                    throw new ObjectDisposedException("destination", "Stream is closed");
+                if (!destination.CanWrite)
+                    throw new NotSupportedException("Cannot write to destination. It's unwritable.");
+
+                // TODO: if other stream is Segment-based, optimize maybe?
+                var toCopy = (int) _length - _position;
+                while (toCopy > 0)
+                {
+                    var index = _pool.GetSegmentIndex(_position);
+                    var indexInSegment = _pool.GetIndexInSegment(_position);
+
+                    var segment = FindSegment(index);
+
+                    var bytesToRead = (int)Math.Min(_pool.SegmentSize - indexInSegment, toCopy);
+                    if (bytesToRead > 0)
+                    {
+                        var arraySegment = segment._segment;
+                        destination.Write(arraySegment.Array, arraySegment.Offset + indexInSegment, bytesToRead);
+                        toCopy -= bytesToRead;
+                        _position += bytesToRead;
+                    }
                 }
             }
 

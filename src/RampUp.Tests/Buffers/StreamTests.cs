@@ -208,5 +208,24 @@ namespace RampUp.Tests.Buffers
 
             CollectionAssert.AreEqual(bytes, ms.ToArray());
         }
+
+        [TestCase(0, TestName="No offset at all")]
+        [TestCase(1, TestName =  "Skipping one")]
+        public void NewCopyShouldCopyLikeBaseCopy(int offset)
+        {
+            var bytes = new byte[9345];
+            var random = new Random(bytes.Length);
+            random.NextBytes(bytes);
+
+            var original = new MemoryStream(bytes);
+            original.Seek(0, SeekOrigin.Begin);
+            original.CopyTo(_stream);
+            _stream.Seek(offset, SeekOrigin.Begin);
+
+            var newCopy = new MemoryStream();
+            ((Segment.Stream)_stream).CopyTo(newCopy);
+
+            CollectionAssert.AreEqual(bytes.Skip(offset), newCopy.ToArray());
+        }
     }
 }
