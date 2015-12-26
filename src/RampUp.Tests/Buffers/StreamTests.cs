@@ -6,14 +6,14 @@ using RampUp.Buffers;
 
 namespace RampUp.Tests.Buffers
 {
-    public class StreamTests
+    public class StreamTests : IDisposable
     {
-        private readonly Segment.Pool _pool;
+        private readonly ISegmentPool _pool;
         private Stream _stream;
 
         public StreamTests()
         {
-            _pool = new Segment.Pool(32);
+            _pool = new SingleThreadSegmentPool(1024, 4096);
         }
 
         [SetUp]
@@ -223,9 +223,14 @@ namespace RampUp.Tests.Buffers
             _stream.Seek(offset, SeekOrigin.Begin);
 
             var newCopy = new MemoryStream();
-            ((Segment.Stream)_stream).CopyTo(newCopy);
+            ((RampUp.Buffers.SegmentStream)_stream).CopyTo(newCopy);
 
             CollectionAssert.AreEqual(bytes.Skip(offset), newCopy.ToArray());
+        }
+
+        public void Dispose()
+        {
+            _pool.Dispose();
         }
     }
 }
