@@ -1,25 +1,20 @@
 ﻿using System;
+using RampUp.Atomics;
 
 namespace RampUp.Buffers
 {
-    public sealed unsafe class UnsafeBuffer : IDisposable
+    /// <summary>
+    /// Unsafe, aligned to a page boundary buffer allocated with <see cref="Native.VirtualAlloc"/>.
+    /// </summary>
+    public sealed unsafe class UnsafeBuffer : IUnsafeBuffer
     {
         private readonly UIntPtr _size;
         private readonly UIntPtr _allocated;
 
-        public UnsafeBuffer(int minimalSize)
+        public UnsafeBuffer(int size)
         {
-            var pageSize = Native.Info.AllocationGranularity;
-
-            if (minimalSize % pageSize == 0)
-            {
-                _size = (UIntPtr)minimalSize;
-            }
-            else
-            {
-                // size different than allocation granularity, round up to the next multiple
-                _size = (UIntPtr)((minimalSize / pageSize + 1) * pageSize);
-            }
+            Size = size;
+            _size = (UIntPtr)size.AlignToMultipleOf((int)Native.Info.AllocationGranularity);
 
             _allocated = Native.VirtualAlloc(UIntPtr.Zero, _size,
               Native.AllocationType.Commit | Native.AllocationType.Reserve,
@@ -27,7 +22,19 @@ namespace RampUp.Buffers
             RawBytes = (byte*)_allocated;
         }
 
+        public int Size { get; }
+
         public byte* RawBytes { get; }
+
+        public AtomicLong GetAtomicLong(long index)
+        {
+            return new AtomicLong(RawBytes + index);
+        }
+
+        public AtomicInt GetAtomicInt(long index)
+        {
+            return new AtomicInt(RawBytes + index);
+        }
 
         public void Dispose()
         {
@@ -42,6 +49,16 @@ namespace RampUp.Buffers
             }
 
             Native.VirtualFree(_allocated, _size, Native.AllocationType.Decommit | Native.AllocationType.Release);
+        }
+
+        public void Write(int offset, ByteChunk chunk)
+        {
+            Native.MemcpyUnmanaged(RawBytes + offset, chunk.Pointer, chunk.Length);
+        }
+
+        public void ZeroMemory(int start, int length)
+        {
+            Native.ZeroMemory(RawBytes + start, length);
         }
     }
 }

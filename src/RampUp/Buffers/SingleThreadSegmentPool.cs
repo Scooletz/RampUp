@@ -42,12 +42,10 @@ namespace RampUp.Buffers
                 var segment = new Segment(buffer, segmentLength);
 
                 // copy to the memory pointed by s
-                Native.MemcpyUnmanagedFunc((byte*) s, (byte*) &segment, Segment.Size);
+                Native.MemcpyUnmanaged((byte*) s, (byte*) &segment, Segment.Size);
 
                 Push(s);
             }
-
-            new IndexCalculator(SegmentLength);
         }
 
         public int SegmentLength { get; }

@@ -77,44 +77,54 @@ namespace RampUp
             public readonly ushort ProcessorRevision; // WORD
         }
 
-        public delegate void MemcpyFromUnmanaged(byte[] dest, int destIndex, byte* src, int srcIndex, int len);
+        public delegate void MemcpyFromUnmanagedDelegate(byte[] dest, int destIndex, byte* src, int srcIndex, int len);
 
-        public delegate void MemcpyToUnmanaged(byte* pDest, int destIndex, byte[] src, int srcIndex, int len);
+        public delegate void MemcpyToUnmanagedDelegate(byte* pDest, int destIndex, byte[] src, int srcIndex, int len);
 
-        public delegate void MemcpyUnmanaged (byte* dest, byte* src, int len);
+        public delegate void MemcpyUnmanagedDelegate (byte* dest, byte* src, int len);
 
-        public static readonly MemcpyFromUnmanaged MemcpyFromUnmanagedFunc;
-        public static readonly MemcpyToUnmanaged MemcpyToUnmanagedFunc;
-        public static readonly MemcpyUnmanaged MemcpyUnmanagedFunc;
+        public delegate void ZeroMemoryDelegate(byte* src, long len);
+
+        public static readonly MemcpyFromUnmanagedDelegate MemcpyFromUnmanaged;
+        public static readonly MemcpyToUnmanagedDelegate MemcpyToUnmanaged;
+        public static readonly MemcpyUnmanagedDelegate MemcpyUnmanaged;
+        public static readonly ZeroMemoryDelegate ZeroMemory;
         public static readonly SystemInfo Info;
 
         static Native()
         {
-            var bufferMemCpyMethods = typeof (Buffer)
-                .GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
+            var staticMethods = typeof (Buffer)
+                .GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic).ToArray();
+
+            var bufferMemCpyMethods = staticMethods
                 .Where(mi => mi.Name == "Memcpy").ToArray();
 
-            MemcpyFromUnmanagedFunc =
-                (MemcpyFromUnmanaged)
-                    Delegate.CreateDelegate(typeof (MemcpyFromUnmanaged), bufferMemCpyMethods.Single(mi =>
+            MemcpyFromUnmanaged =
+                (MemcpyFromUnmanagedDelegate)
+                    Delegate.CreateDelegate(typeof (MemcpyFromUnmanagedDelegate), bufferMemCpyMethods.Single(mi =>
                     {
                         var parameters = mi.GetParameters();
                         return parameters.Length == 5 && parameters[0].ParameterType == typeof (byte[]);
                     }));
 
-            MemcpyToUnmanagedFunc =
-              (MemcpyToUnmanaged)
-                  Delegate.CreateDelegate(typeof(MemcpyToUnmanaged), bufferMemCpyMethods.Single(mi =>
+            MemcpyToUnmanaged =
+              (MemcpyToUnmanagedDelegate)
+                  Delegate.CreateDelegate(typeof(MemcpyToUnmanagedDelegate), bufferMemCpyMethods.Single(mi =>
                   {
                       var parameters = mi.GetParameters();
                       return parameters.Length == 5 && parameters[0].ParameterType == typeof(byte*);
                   }));
 
-            MemcpyUnmanagedFunc =
-                (MemcpyUnmanaged)
-                    Delegate.CreateDelegate(typeof (MemcpyUnmanaged),
+            MemcpyUnmanaged =
+                (MemcpyUnmanagedDelegate)
+                    Delegate.CreateDelegate(typeof (MemcpyUnmanagedDelegate),
                         bufferMemCpyMethods.Single(mi => mi.GetParameters().Length == 3));
 
+            ZeroMemory =
+                (ZeroMemoryDelegate)
+                    Delegate.CreateDelegate(typeof (ZeroMemoryDelegate),
+                        staticMethods.Single(mi => mi.Name == "ZeroMemory"));
+            
             GetSystemInfo(out Info);
         }
     }

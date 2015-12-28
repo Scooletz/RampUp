@@ -53,5 +53,16 @@ namespace RampUp.Tests
         {
             return value.Log2();
         }
+
+        [TestCase(0, 64, Result = 0)]
+        [TestCase(1, 64, Result = 64)]
+        [TestCase(2, 64, Result = 64)]
+        [TestCase(63, 64, Result = 64)]
+        [TestCase(64, 64, Result = 64)]
+        [TestCase(65, 64, Result = 128)]
+        public int Align(int value, int alignment)
+        {
+            return value.AlignToMultipleOf(alignment);
+        }
     }
 }

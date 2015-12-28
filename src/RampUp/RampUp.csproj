@@ -39,17 +39,26 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Atomics\AtomicInt.cs" />
+    <Compile Include="Atomics\AtomicLong.cs" />
+    <Compile Include="Buffers\ByteChunk.cs" />
     <Compile Include="Buffers\Extensions.cs" />
     <Compile Include="Buffers\IndexCalculator.cs" />
     <Compile Include="Buffers\ISegmentPool.cs" />
+    <Compile Include="Buffers\IUnsafeBuffer.cs" />
     <Compile Include="Buffers\SingleThreadSegmentPool.cs" />
     <Compile Include="Buffers\Segment.cs" />
     <Compile Include="Buffers\SegmentStream.cs" />
     <Compile Include="Buffers\UnsafeBuffer.cs" />
     <Compile Include="Native.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Ring\IRingBuffer.cs" />
+    <Compile Include="Ring\ManyToOneRingBuffer.cs" />
+    <Compile Include="Ring\MessageHandler.cs" />
+    <Compile Include="Ring\RingBufferDescriptor.cs" />
     <Compile Include="Utils.cs" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

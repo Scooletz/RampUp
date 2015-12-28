@@ -153,7 +153,7 @@ namespace RampUp.Buffers
                 if (bytesToRead > 0)
                 {
                     var segmentBuffer = segment->Buffer;
-                    Native.MemcpyFromUnmanagedFunc(buffer, offset + alreadyCopied, segmentBuffer, indexInSegment, bytesToRead);
+                    Native.MemcpyFromUnmanaged(buffer, offset + alreadyCopied, segmentBuffer, indexInSegment, bytesToRead);
                     alreadyCopied += bytesToRead;
                     toCopy -= bytesToRead;
                     _position += bytesToRead;
@@ -204,7 +204,7 @@ namespace RampUp.Buffers
                 spaceToWrite = spaceToWrite > toWrite ? toWrite : spaceToWrite;
                 if (spaceToWrite > 0)
                 {
-                    Native.MemcpyToUnmanagedFunc(segmentBuffer, currentSegmentIndex, buffer, offset, spaceToWrite);
+                    Native.MemcpyToUnmanaged(segmentBuffer, currentSegmentIndex, buffer, offset, spaceToWrite);
                 }
 
                 toWrite -= spaceToWrite;
@@ -262,7 +262,7 @@ namespace RampUp.Buffers
         //        throw new NotSupportedException("Cannot write to destination. It's unwritable.");
 
         //    // TODO: if other stream is Segment-based, optimize maybe?
-        //    var toCopy = (int) _length - _position;
+        //    var toCopy = (int) Length - _position;
 
         //    var copier = new byte[_pool.SegmentSize];
 
