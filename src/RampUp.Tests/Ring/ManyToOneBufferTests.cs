@@ -1,4 +1,6 @@
-﻿using NSubstitute;
+﻿using System;
+using System.Linq;
+using NSubstitute;
 using NUnit.Framework;
 using RampUp.Atomics;
 using RampUp.Buffers;
@@ -8,7 +10,7 @@ namespace RampUp.Tests.Ring
 {
     public class ManyToOneBufferTests
     {
-        private const int MsgTypeId = 7;
+        private const int MessageTypeId = 7;
         private const int Capacity = 4096;
         private static readonly int TotalBufferLength = Capacity + TrailerLength;
         private static readonly int TailCounterIndex = Capacity + TailPositionOffset;
@@ -17,6 +19,10 @@ namespace RampUp.Tests.Ring
 
         private IUnsafeBuffer _buffer;
         private ManyToOneRingBuffer _ringBuffer;
+        private static readonly IntPtr CurrentSlot = new IntPtr(0);
+        private static readonly IntPtr Tail = new IntPtr(8);
+        private static readonly IntPtr Head = new IntPtr(16);
+        private static readonly IntPtr HeadCache = new IntPtr(24);
 
         [SetUp]
         public void SetUp()
@@ -31,33 +37,42 @@ namespace RampUp.Tests.Ring
             const int length = 8;
             var recordLength = length + HeaderLength;
             var alignedRecordLength = recordLength.AlignToMultipleOf(Native.CacheLineSize);
-            var tail = 0L;
-            var head = 0L;
-            var headCache = 0L;
 
-            var headAtomic = new AtomicLong((byte*) &head);
+            var headAtomic = new AtomicLong((byte*)Head);
             _buffer.GetAtomicLong(HeadCounterIndex).Returns(headAtomic);
-            var tailAtomic = new AtomicLong((byte*) &tail);
+            var tailAtomic = new AtomicLong((byte*)Tail);
             _buffer.GetAtomicLong(TailCounterIndex).Returns(tailAtomic);
-            var headCacheAtomic = new AtomicLong((byte*) &headCache);
+            var headCacheAtomic = new AtomicLong((byte*)HeadCache);
             _buffer.GetAtomicLong(HeadCounterCacheIndex).Returns(headCacheAtomic);
 
+            var atomicLong = Substitute.For<Mocks.IAtomicLong>();
+            Mocks.AtomicLong = atomicLong;
+
+            var atomicInt = Substitute.For<Mocks.IAtomicInt>();
+            Mocks.AtomicInt = atomicInt;
+
+            const int headValue = 0;
+            atomicLong.VolatileRead(Arg.Is(Head)).Returns(headValue);
+            const int tailValue = 0;
+            atomicLong.VolatileRead(Arg.Is(Tail)).Returns(tailValue);
+
             _ringBuffer = new ManyToOneRingBuffer(_buffer);
-            //when(buffer.getLongVolatile(HEAD_COUNTER_INDEX)).thenReturn(head);
-            //when(buffer.getLongVolatile(TAIL_COUNTER_INDEX)).thenReturn(tail);
 
-
-            // TODO: when(buffer.compareAndSetLong(TAIL_COUNTER_INDEX, tail, tail + alignedRecordLength)).thenReturn(TRUE);
+            atomicLong.CompareExchange(Arg.Is(Tail), Arg.Is(tailValue), Arg.Is(tailValue + alignedRecordLength)).Returns(tailValue);
 
             var block = stackalloc byte[100];
 
-            Assert.IsTrue(_ringBuffer.Write(MsgTypeId, new ByteChunk(block,length)));
-      
-            // TODO: asserts on Atomics
-            //final InOrder inOrder = inOrder(buffer);
-            //inOrder.verify(buffer).putLongOrdered((int)tail, makeHeader(-recordLength, MSG_TYPE_ID));
-            //inOrder.verify(buffer).putBytes(encodedMsgOffset((int)tail), srcBuffer, srcIndex, length);
-            //inOrder.verify(buffer).putIntOrdered(lengthOffset((int)tail), recordLength);
+            _buffer.GetAtomicInt(tailValue).Returns(new AtomicInt((byte*)CurrentSlot));
+            var chunk = new ByteChunk(block, length);
+            Assert.IsTrue(_ringBuffer.Write(MessageTypeId, chunk));
+
+            Received.InOrder(() =>
+            {
+                atomicLong.VolatileWrite(CurrentSlot, MakeHeader(-recordLength, MessageTypeId));
+                _buffer.Write(EncodedMsgOffset(tailValue), chunk);
+                _buffer.GetAtomicInt(tailValue);
+                atomicInt.VolatileWrite(CurrentSlot, recordLength);
+            });
         }
     }
 }

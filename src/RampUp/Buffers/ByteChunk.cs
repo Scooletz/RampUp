@@ -15,5 +15,24 @@ namespace RampUp.Buffers
             Pointer = pointer;
             Length = length;
         }
+
+        public bool Equals(ByteChunk other)
+        {
+            return Pointer == other.Pointer && Length == other.Length;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj)) return false;
+            return obj is ByteChunk && Equals((ByteChunk)obj);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                return (int)Pointer * 397 ^ Length;
+            }
+        }
     }
 }

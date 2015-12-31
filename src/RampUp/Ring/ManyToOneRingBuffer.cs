@@ -51,9 +51,6 @@ namespace RampUp.Ring
             {
                 var index = _buffer.GetAtomicLong(recordIndex);
                 index.VolatileWrite(MakeHeader(-recordLength, messageTypeId));
-
-                //UnsafeAccess.UNSAFE.storeFence();
-
                 _buffer.Write(EncodedMsgOffset(recordIndex), chunk);
                 _buffer.GetAtomicInt(recordIndex).VolatileWrite(recordLength);
 

@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics.Contracts;
 using System.Threading;
 // ReSharper disable PureAttributeOnVoidMethod
+// ReSharper disable UnusedMember.Local
 
 namespace RampUp.Atomics
 {
@@ -23,33 +24,63 @@ namespace RampUp.Atomics
         }
 
         [Pure]
-        public long Read()
+        public long ReadImpl()
         {
             return *_ptr;
         }
 
         [Pure]
-        public void Write(long value)
+        public long Read()
+        {
+            return Mocks.AtomicLong.Read((IntPtr) _ptr);
+        }
+
+        [Pure]
+        private void WriteImpl(long value)
         {
             *_ptr = value;
         }
 
         [Pure]
-        public long VolatileRead()
+        public void Write(int value)
+        {
+            Mocks.AtomicLong.Write((IntPtr) _ptr, value);
+        }
+
+        [Pure]
+        private long VolatileReadImpl()
         {
             return Volatile.Read(ref *_ptr);
         }
 
         [Pure]
-        public void VolatileWrite(long value)
+        public long VolatileRead()
+        {
+            return Mocks.AtomicLong.VolatileRead((IntPtr) _ptr);
+        }
+
+        [Pure]
+        private void VolatileWriteImpl(long value)
         {
             Volatile.Write(ref *_ptr, value);
         }
 
         [Pure]
-        public long CompareExchange(long value, long comparand)
+        public void VolatileWrite(long value)
+        {
+            Mocks.AtomicLong.VolatileWrite((IntPtr) _ptr, value);
+        }
+
+        [Pure]
+        private long CompareExchangeImpl(long value, long comparand)
         {
             return Interlocked.CompareExchange(ref *_ptr, value, comparand);
+        }
+
+        [Pure]
+        public long CompareExchange(long value, long comparand)
+        {
+            return Mocks.AtomicLong.CompareExchange((IntPtr) _ptr, value, comparand);
         }
 
         public override string ToString()
