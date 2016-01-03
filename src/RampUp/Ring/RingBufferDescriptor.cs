@@ -110,7 +110,7 @@ namespace RampUp.Ring
 
         public static long MakeHeader(int length, int messageTypeId)
         {
-            return (messageTypeId << 32) | length;
+            return ((long)messageTypeId << 32) | length;
         }
 
         public static int RecordLength(long header)

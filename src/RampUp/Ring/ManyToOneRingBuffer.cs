@@ -161,7 +161,8 @@ namespace RampUp.Ring
 
             if (0 != padding)
             {
-                _tail.VolatileWrite(MakeHeader(padding, PaddingMsgTypeId));
+                var tailAtomic = _buffer.GetAtomicLong(tailIndex);
+                tailAtomic.VolatileWrite(MakeHeader(padding, PaddingMsgTypeId));
                 tailIndex = 0;
             }
 
