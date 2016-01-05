@@ -127,5 +127,8 @@ namespace RampUp
             
             GetSystemInfo(out Info);
         }
+
+        [DllImport("kernel32.dll")]
+        public static extern uint GetCurrentThreadId();
     }
 }
