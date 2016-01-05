@@ -33,8 +33,8 @@ namespace RampUp.Tests.Ring
             _buffer = Substitute.For<IUnsafeBuffer>();
             _buffer.Size.Returns(TotalBufferLength);
 
-            _buffer.GetAtomicLong(Arg.Any<long>()).Returns(ci => new AtomicLong((byte*) ci.Arg<long>()));
-            _buffer.GetAtomicInt(Arg.Any<long>()).Returns(ci => new AtomicInt((byte*) ci.Arg<long>()));
+            _buffer.GetAtomicLong(Arg.Any<long>()).Returns(ci => new AtomicLong((byte*)ci.Arg<long>()));
+            _buffer.GetAtomicInt(Arg.Any<long>()).Returns(ci => new AtomicInt((byte*)ci.Arg<long>()));
 
             _atomicLong = Substitute.For<Mocks.IAtomicLong>();
             Mocks.AtomicLong = _atomicLong;
@@ -214,7 +214,6 @@ namespace RampUp.Tests.Ring
             _atomicLong.VolatileRead(new IntPtr(headIndex)).Returns(makeHeader);
             _atomicLong.VolatileRead(new IntPtr(headIndex + alignedRecordLength)).Returns(makeHeader);
 
-
             var counter = 0;
             MessageHandler h = (id, chunk) => counter++;
             var messagesRead = _ringBuffer.Read(h, 3);
@@ -229,177 +228,110 @@ namespace RampUp.Tests.Ring
             });
         }
 
-        //    @Test
-        //public void shouldLimitReadOfMessages()
-        //    {
-        //        final int msgLength = 16;
-        //        final int recordLength = HEADER_LENGTH + msgLength;
-        //        final int alignedRecordLength = align(recordLength, ALIGNMENT);
-        //        final long head = 0L;
-        //        final int headIndex = (int)head;
+        [Test]
+        public void ShouldLimitReadOfMessages()
+        {
+            const int msgLength = 16;
+            var recordLength = HeaderLength + msgLength;
+            var alignedRecordLength = recordLength.AlignToMultipleOf(RecordAlignment);
+            const long head = 0L;
+            const int headIndex = (int)head;
 
-        //        when(buffer.getLong(HEAD_COUNTER_INDEX)).thenReturn(head);
-        //        when(buffer.getLongVolatile(headIndex)).thenReturn(makeHeader(recordLength, MSG_TYPE_ID));
+            _atomicLong.Read(Head).Returns(head);
+            _atomicLong.VolatileRead(new IntPtr(headIndex)).Returns(MakeHeader(recordLength, MessageTypeId));
 
-        //        final int[] times = new int[1];
-        //        final MessageHandler handler = (msgTypeId, buffer, index, length) ->times[0]++;
-        //        final int limit = 1;
-        //        final int messagesRead = ringBuffer.read(handler, limit);
+            var counter = 0;
+            MessageHandler h = (id, chunk) => counter++;
+            var messagesRead = _ringBuffer.Read(h, 1);
 
-        //        assertThat(messagesRead, is(1));
-        //        assertThat(times[0], is(1));
+            Assert.AreEqual(1, messagesRead);
+            Assert.AreEqual(1, counter);
 
-        //        final InOrder inOrder = inOrder(buffer);
-        //        inOrder.verify(buffer, times(1)).setMemory(headIndex, alignedRecordLength, (byte)0);
-        //        inOrder.verify(buffer, times(1)).putLongOrdered(HEAD_COUNTER_INDEX, head + alignedRecordLength);
-        //    }
+            Received.InOrder(() =>
+            {
+                _buffer.ZeroMemory(headIndex, alignedRecordLength);
+                _atomicLong.VolatileWrite(Head, head + alignedRecordLength);
+            });
+        }
 
-        //    @Test
-        //public void shouldCopeWithExceptionFromHandler()
-        //    {
-        //        final int msgLength = 16;
-        //        final int recordLength = HEADER_LENGTH + msgLength;
-        //        final int alignedRecordLength = align(recordLength, ALIGNMENT);
-        //        final long tail = alignedRecordLength * 2;
-        //        final long head = 0L;
-        //        final int headIndex = (int)head;
+        [Test]
+        public void ShouldCopeWithExceptionFromHandler()
+        {
+            const int msgLength = 16;
+            var recordLength = HeaderLength + msgLength;
+            var alignedRecordLength = recordLength.AlignToMultipleOf(RecordAlignment);
+            var tail = alignedRecordLength * 2;
+            const long head = 0L;
+            const int headIndex = (int)head;
 
-        //        when(buffer.getLong(HEAD_COUNTER_INDEX)).thenReturn(head);
-        //        when(buffer.getLongVolatile(headIndex)).thenReturn(makeHeader(recordLength, MSG_TYPE_ID));
-        //        when(buffer.getLongVolatile(headIndex + alignedRecordLength)).thenReturn(makeHeader(recordLength, MSG_TYPE_ID));
+            _atomicLong.Read(Head).Returns(head);
+            _atomicLong.VolatileRead(new IntPtr(headIndex)).Returns(MakeHeader(recordLength, MessageTypeId));
+            _atomicLong.VolatileRead(new IntPtr(headIndex + alignedRecordLength)).Returns(MakeHeader(recordLength, MessageTypeId));
 
-        //        final int[] times = new int[1];
-        //        final MessageHandler handler =
-        //            (msgTypeId, buffer, index, length) ->
-        //            {
-        //            times[0]++;
-        //            if (times[0] == 2)
-        //            {
-        //                throw new RuntimeException();
-        //            }
-        //        };
+            var counter = 0;
+            MessageHandler h = (id, chunk) =>
+            {
+                counter++;
+                if (counter == 2)
+                {
+                    throw new Exception();
+                }
+            };
 
-        //        try
-        //        {
-        //            ringBuffer.read(handler);
-        //        }
-        //        catch (final RuntimeException ignore)
-        //    {
-        //            assertThat(times[0], is(2));
+            try
+            {
+                _ringBuffer.Read(h, 2);
+            }
+            catch
+            {
+                Assert.AreEqual(2, counter);
 
-        //            final InOrder inOrder = inOrder(buffer);
-        //            inOrder.verify(buffer, times(1)).setMemory(headIndex, alignedRecordLength * 2, (byte)0);
-        //            inOrder.verify(buffer, times(1)).putLongOrdered(HEAD_COUNTER_INDEX, tail);
+                Received.InOrder(() =>
+                {
+                    _buffer.Received(1).ZeroMemory(Arg.Is(headIndex), Arg.Is(alignedRecordLength * 2));
+                    _atomicLong.Received(1).VolatileWrite(Head, tail);
+                });
+                return;
+            }
 
-        //            return;
-        //        }
+            Assert.Fail("This should not go to this point");
+        }
 
-        //        fail("Should have thrown exception");
-        //        }
+        [Test]
+        public void ShouldThrowExceptionForCapacityThatIsNotPowerOfTwo()
+        {
+            var unsafeBuffer = Substitute.For<IUnsafeBuffer>();
+            unsafeBuffer.Size.Returns(777 + TrailerLength);
+            Assert.Throws<ArgumentException>(() => new ManyToOneRingBuffer(unsafeBuffer));
+        }
 
-        //        @Test
-        //public void shouldNotUnblockWhenEmpty()
-        //    {
-        //        final long position = ALIGNMENT * 4;
-        //        when(buffer.getLongVolatile(HEAD_COUNTER_INDEX)).thenReturn(position);
-        //        when(buffer.getLongVolatile(TAIL_COUNTER_INDEX)).thenReturn(position);
+        [Test]
+        public void ShouldThrowExceptionWhenMaxMessageSizeExceeded()
+        {
+            Assert.Throws<ArgumentException>(() => { _ringBuffer.Write(MessageTypeId, new ByteChunk(null, _ringBuffer.MaximumMessageLength + 1)); });
+        }
 
-        //        assertFalse(ringBuffer.unblock());
-        //    }
+        [Test]
+        public void ShouldInsertPaddingAndWriteToBuffer()
+        {
+            const int padding = 200;
+            const int messageLength = 400;
+            var recordLength = messageLength + HeaderLength;
+            var alignedRecordLength = recordLength.AlignToMultipleOf(RecordAlignment);
 
-        //    @Test
-        //public void shouldUnblockMessageWithHeader()
-        //    {
-        //        final int messageLength = ALIGNMENT * 4;
-        //        when(buffer.getLongVolatile(HEAD_COUNTER_INDEX)).thenReturn((long)messageLength);
-        //        when(buffer.getLongVolatile(TAIL_COUNTER_INDEX)).thenReturn((long)messageLength * 2);
-        //        when(buffer.getIntVolatile(messageLength)).thenReturn(-messageLength);
+            const long tail = 2 * Capacity - padding;
+            const long head = tail;
 
-        //        assertTrue(ringBuffer.unblock());
+            // free space is (200 + 300) more than message length (400) but contiguous space (300) is less than message length (400)
+            const long headCache = Capacity + 300;
 
-        //        verify(buffer).putLongOrdered(messageLength, makeHeader(messageLength, PADDING_MSG_TYPE_ID));
-        //    }
+            _atomicLong.VolatileRead(Head).Returns(head);
+            _atomicLong.VolatileRead(Tail).Returns(tail);
+            _atomicLong.VolatileRead(HeadCounterCache).Returns(headCache);
+            _atomicLong.CompareExchange(Tail, tail + alignedRecordLength + padding, tail).Returns(tail);
 
-        //    @Test
-        //public void shouldUnblockGapWithZeros()
-        //    {
-        //        final int messageLength = ALIGNMENT * 4;
-        //        when(buffer.getLongVolatile(HEAD_COUNTER_INDEX)).thenReturn((long)messageLength);
-        //        when(buffer.getLongVolatile(TAIL_COUNTER_INDEX)).thenReturn((long)messageLength * 3);
-        //        when(buffer.getIntVolatile(messageLength * 2)).thenReturn(messageLength);
-
-        //        assertTrue(ringBuffer.unblock());
-
-        //        verify(buffer).putLongOrdered(messageLength, makeHeader(messageLength, PADDING_MSG_TYPE_ID));
-        //    }
-
-        //    @Test
-        //public void shouldNotUnblockGapWithMessageRaceOnSecondMessageIncreasingTailThenInterrupting()
-        //    {
-        //        final int messageLength = ALIGNMENT * 4;
-        //        when(buffer.getLongVolatile(HEAD_COUNTER_INDEX)).thenReturn((long)messageLength);
-        //        when(buffer.getLongVolatile(TAIL_COUNTER_INDEX)).thenReturn((long)messageLength * 3);
-        //        when(buffer.getIntVolatile(messageLength * 2)).thenReturn(0).thenReturn(messageLength);
-
-        //        assertFalse(ringBuffer.unblock());
-        //        verify(buffer, never()).putLongOrdered(messageLength, makeHeader(messageLength, PADDING_MSG_TYPE_ID));
-        //    }
-
-        //    @Test
-        //public void shouldNotUnblockGapWithMessageRaceWhenScanForwardTakesAnInterrupt()
-        //    {
-        //        final int messageLength = ALIGNMENT * 4;
-        //        when(buffer.getLongVolatile(HEAD_COUNTER_INDEX)).thenReturn((long)messageLength);
-        //        when(buffer.getLongVolatile(TAIL_COUNTER_INDEX)).thenReturn((long)messageLength * 3);
-        //        when(buffer.getIntVolatile(messageLength * 2)).thenReturn(0).thenReturn(messageLength);
-        //        when(buffer.getIntVolatile(messageLength * 2 + ALIGNMENT)).thenReturn(7);
-
-        //        assertFalse(ringBuffer.unblock());
-        //        verify(buffer, never()).putLongOrdered(messageLength, makeHeader(messageLength, PADDING_MSG_TYPE_ID));
-        //    }
-
-        //    @Test
-        //public void shouldCalculateCapacityForBuffer()
-        //    {
-        //        assertThat(ringBuffer.capacity(), is(CAPACITY));
-        //    }
-
-        //@Test(expected = IllegalStateException.class)
-        //public void shouldThrowExceptionForCapacityThatIsNotPowerOfTwo()
-        //    {
-        //        final int capacity = 777;
-        //        final int totalBufferLength = capacity + RingBufferDescriptor.TRAILER_LENGTH;
-        //        new ManyToOneRingBuffer(new UnsafeBuffer(new byte[totalBufferLength]));
-        //    }
-
-        //@Test(expected = IllegalArgumentException.class)
-        //public void shouldThrowExceptionWhenMaxMessageSizeExceeded()
-        //    {
-        //        final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[1024]);
-
-        //        ringBuffer.write(MSG_TYPE_ID, srcBuffer, 0, ringBuffer.maxMsgLength() + 1);
-        //    }
-
-        //    @Test
-        //public void shouldInsertPaddingAndWriteToBuffer()
-        //    {
-        //        final int padding = 200;
-        //        final int messageLength = 400;
-        //        final int recordLength = messageLength + HEADER_LENGTH;
-        //        final int alignedRecordLength = align(recordLength, ALIGNMENT);
-
-        //        final long tail = 2 * CAPACITY - padding;
-        //        final long head = tail;
-
-        //        // free space is (200 + 300) more than message length (400) but contiguous space (300) is less than message length (400)
-        //        final long headCache = CAPACITY + 300;
-
-        //        when(buffer.getLongVolatile(HEAD_COUNTER_INDEX)).thenReturn(head);
-        //        when(buffer.getLongVolatile(TAIL_COUNTER_INDEX)).thenReturn(tail);
-        //        when(buffer.getLongVolatile(HEAD_COUNTER_CACHE_INDEX)).thenReturn(headCache);
-        //        when(buffer.compareAndSetLong(TAIL_COUNTER_INDEX, tail, tail + alignedRecordLength + padding)).thenReturn(true);
-        //        final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[messageLength]);
-        //        assertTrue(ringBuffer.write(MSG_TYPE_ID, srcBuffer, 0, messageLength));
-        //    }
+            byte* payload = stackalloc byte[messageLength];
+            Assert.True(_ringBuffer.Write(MessageTypeId, new ByteChunk(payload, messageLength)));
+        }
     }
 }
