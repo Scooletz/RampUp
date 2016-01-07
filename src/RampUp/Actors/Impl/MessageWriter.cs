@@ -49,14 +49,12 @@ namespace RampUp.Actors.Impl
             il.Emit(OpCodes.Ldc_I4, messageIdGetter(@struct));
 
             //// envelope ByteChunk
-            il.Emit(OpCodes.Ldarga_S, 0); // YES, you can load the managed reference and pass it as a pointer :D
-            il.Emit(OpCodes.Conv_U);
+            il.Emit(OpCodes.Ldarg_0); // YES, you can load the managed reference and pass it as a pointer :D
             il.Emit(OpCodes.Ldc_I4, envelopeSize);
             il.Emit(OpCodes.Newobj, byteChunkCtor);
 
             //// message ByteChunk
-            il.Emit(OpCodes.Ldarga_S, 2); // YES, you can load the managed reference and pass it as a pointer :D
-            il.Emit(OpCodes.Conv_U);
+            il.Emit(OpCodes.Ldarg_1); // YES, you can load the managed reference and pass it as a pointer :D
             il.Emit(OpCodes.Ldc_I4, structSize);
             il.Emit(OpCodes.Newobj, byteChunkCtor);
 
