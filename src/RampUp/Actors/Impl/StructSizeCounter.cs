@@ -89,31 +89,5 @@ namespace RampUp.Actors.Impl
                 bytes[i] = 1;
             }
         }
-
-        /// <summary>
-        /// Just for picking up IL in disassembler.
-        /// </summary>
-        private struct A
-        {
-            public int Value;
-            public Guid OtherValue;
-        }
-
-        /// <summary>
-        /// Just for picking up IL in disassembler.
-        /// </summary>
-        /// <returns></returns>
-        private static unsafe int GetManagedSize()
-        {
-            byte* bytes = stackalloc byte[ProbeSize];
-
-            // first copy 1s to bytes
-            InitBytes(bytes);
-
-            *(A*)bytes = default(A);
-
-            // count zeroes as .NET structs are zero initialized
-            return CountZeros(bytes);
-        }
     }
 }
