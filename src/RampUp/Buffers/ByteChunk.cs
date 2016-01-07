@@ -34,5 +34,10 @@ namespace RampUp.Buffers
                 return (int)Pointer * 397 ^ Length;
             }
         }
+
+        public override string ToString()
+        {
+            return $"{new IntPtr(Pointer)} / {Length}";
+        }
     }
 }

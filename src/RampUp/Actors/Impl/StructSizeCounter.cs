@@ -6,23 +6,23 @@ using System.Reflection.Emit;
 
 namespace RampUp.Actors.Impl
 {
-    public class StructSizeCounter
+    public class StructSizeCounter : IStructSizeCounter
     {
         private const int ProbeSize = 10 * 1024;
         private readonly Dictionary<Type, int> _sizes = new Dictionary<Type, int>();
 
-        public int GetSize(Type t)
+        public int GetSize(Type @struct)
         {
             int size;
-            if (_sizes.TryGetValue(t, out size))
+            if (_sizes.TryGetValue(@struct, out size))
             {
                 return size;
             }
 
-            Assert(t);
+            Assert(@struct);
 
-            var dm = new DynamicMethod("GetSizeOf" + t.Namespace.Replace(".", "_") + t.Name, typeof(int), Type.EmptyTypes,
-                t.Assembly.Modules.First(), true);
+            var dm = new DynamicMethod("GetSizeOf" + @struct.Namespace.Replace(".", "_") + @struct.Name, typeof(int), Type.EmptyTypes,
+                @struct.Assembly.Modules.First(), true);
             var il = dm.GetILGenerator();
             il.DeclareLocal(typeof(byte*));
 
@@ -34,14 +34,14 @@ namespace RampUp.Actors.Impl
             var initBytes = typeof(StructSizeCounter).GetMethod("InitBytes", BindingFlags.Static | BindingFlags.NonPublic);
             il.EmitCall(OpCodes.Call, initBytes, null);
             il.Emit(OpCodes.Ldloc_0);
-            il.Emit(OpCodes.Initobj, t);
+            il.Emit(OpCodes.Initobj, @struct);
             il.Emit(OpCodes.Ldloc_0);
             var countZeroes = typeof(StructSizeCounter).GetMethod("CountZeros", BindingFlags.Static | BindingFlags.NonPublic);
             il.EmitCall(OpCodes.Call, countZeroes, null);
             il.Emit(OpCodes.Ret);
 
             size = ((Func<int>)dm.CreateDelegate(typeof(Func<int>)))();
-            _sizes[t] = size;
+            _sizes[@struct] = size;
             return size;
         }
 
