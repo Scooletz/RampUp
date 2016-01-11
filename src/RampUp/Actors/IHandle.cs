@@ -4,7 +4,7 @@
     /// The interface marking the actor as handling given message type.
     /// </summary>
     /// <typeparam name="TMessage">The type of the message.</typeparam>
-    public interface IHandle<TMessage>
+    public interface IHandle<TMessage> : IActor
         where TMessage : struct
     {
         /// <summary>
@@ -14,4 +14,6 @@
         /// <param name="msg">The message being passed as ref to eliminate copying the payload.</param>
         void Handle(ref Envelope envelope, ref TMessage msg);
     }
+
+    public interface IActor { }
 }

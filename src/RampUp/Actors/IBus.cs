@@ -1,7 +1,7 @@
 namespace RampUp.Actors
 {
     /// <summary>
-    /// The message bus for actors
+    /// The message bus for actors.
     /// </summary>
     public interface IBus
     {

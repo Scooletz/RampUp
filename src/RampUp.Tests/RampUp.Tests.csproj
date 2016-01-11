@@ -47,6 +47,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Actors\Impl\MessageReaderTests.cs" />
     <Compile Include="Actors\Impl\MessageWriterTests.cs" />
     <Compile Include="Actors\Impl\StructSizeCounterTests.cs" />
     <Compile Include="Buffers\IndexCalculatorTests.cs" />

@@ -29,7 +29,7 @@ namespace RampUp.Tests.Actors.Impl
             buffer.Write(0, new ByteChunk()).ReturnsForAnyArgs(true);
             const int messageId = 5;
             var sender = new MessageWriter(counter, new[] {typeof (A)}, t=>messageId);
-            var e = new Envelope(ActorId.Generate());
+            var e = new Envelope(new ActorId(1));
             var a = new A();
 
             Assert.True(sender.Write(ref e, ref a, buffer));

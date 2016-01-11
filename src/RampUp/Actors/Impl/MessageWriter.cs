@@ -38,7 +38,7 @@ namespace RampUp.Actors.Impl
 
             dm.DefineParameter(1, ParameterAttributes.Out | ParameterAttributes.In, "envelope");
             dm.DefineParameter(2, ParameterAttributes.Out | ParameterAttributes.In, "message");
-            dm.DefineParameter(3, ParameterAttributes.In, "receiver");
+            dm.DefineParameter(3, ParameterAttributes.In, "buffer");
 
             var il = dm.GetILGenerator();
 
@@ -66,11 +66,11 @@ namespace RampUp.Actors.Impl
             return dm.CreateDelegate(typeof (SendMessageDelegate<>).MakeGenericType(@struct));
         }
 
-        public bool Write<TMessage>(ref Envelope envelope, ref TMessage message, IRingBuffer receiver)
+        public bool Write<TMessage>(ref Envelope envelope, ref TMessage message, IRingBuffer buffer)
             where TMessage : struct
         {
             var @delegate = _sendDelegate[typeof (TMessage)];
-            return ((SendMessageDelegate<TMessage>) @delegate)(ref envelope, ref message, receiver);
+            return ((SendMessageDelegate<TMessage>) @delegate)(ref envelope, ref message, buffer);
         }
 
         private delegate bool SendMessageDelegate<TMessage>(

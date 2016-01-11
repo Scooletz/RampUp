@@ -1,4 +1,4 @@
-﻿using System.Threading;
+﻿using System;
 
 namespace RampUp.Actors
 {
@@ -7,17 +7,21 @@ namespace RampUp.Actors
     /// </summary>
     public struct ActorId
     {
-        private static long _next = 1;
-        internal readonly long Value;
+        public const byte MaxValue = byte.MaxValue;
+        internal readonly byte Value;
 
-        public static ActorId Generate()
-        {
-            return new ActorId(Interlocked.Increment(ref _next));
-        }
-
-        private ActorId(long value)
+        public ActorId(byte value)
         {
             Value = value;
+        }
+
+        public ActorId GetNext()
+        {
+            if (Value == MaxValue)
+            {
+                throw new InvalidOperationException($"You can't have more than {MaxValue} actors.");
+            }
+            return new ActorId((byte) (Value + 1));
         }
 
         public bool Equals(ActorId other)

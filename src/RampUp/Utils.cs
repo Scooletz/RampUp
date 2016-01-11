@@ -5,6 +5,12 @@ namespace RampUp
     public static class Util
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int Kilobytes(this int value)
+        {
+            return value*1024;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsPowerOfTwo(this int n)
         {
             return (n & (n - 1)) == 0;
