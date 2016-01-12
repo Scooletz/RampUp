@@ -1,33 +1,72 @@
-﻿using RampUp.Ring;
+﻿using System;
+using System.Threading;
+using RampUp.Ring;
 
 namespace RampUp.Actors.Impl
 {
-    public class Bus : IBus
+    public sealed class Bus : IBus
     {
         private readonly ActorId _owner;
-        private readonly IRingBuffer[] _buffers;
-        private readonly IMessageWriter _sender;
+        private readonly AgentRegistry _registry;
+        private readonly int _throwAfterNTrials;
+        private readonly IMessageWriter _writer;
 
-        public Bus(ActorId owner, IRingBuffer[] buffers, IMessageWriter sender)
+        public Bus(ActorId owner, AgentRegistry registry, int throwAfterNTrials, IMessageWriter writer)
         {
             _owner = owner;
-            _buffers = buffers;
-            _sender = sender;
+            _registry = registry;
+            _throwAfterNTrials = throwAfterNTrials;
+            _writer = writer;
         }
 
         public void Publish<TMessage>(ref TMessage msg)
             where TMessage : struct
         {
-            throw new System.NotImplementedException();
+            var envelope = new Envelope(_owner);
+            var buffers = _registry.GetBuffers(typeof(TMessage));
+            for (var i = 0; i < buffers.Length; i++)
+            {
+                var buffer = buffers[i];
+                Write(ref msg, envelope, buffer);
+            }
         }
 
         public void Send<TMessage>(ref TMessage msg, ActorId receiver)
             where TMessage : struct
         {
-            var buffer = _buffers[receiver.Value];
+            var buffer = _registry[receiver];
             var envelope = new Envelope(_owner);
 
-            _sender.Write(ref envelope, ref msg, buffer);
+            Write(ref msg, envelope, buffer);
+        }
+
+        public void SendToMe<TMessage>(ref TMessage msg) where TMessage : struct
+        {
+            var buffer = _registry[_owner];
+            var envelope = new Envelope(_owner);
+
+            Write(ref msg, envelope, buffer);
+        }
+
+        private void Write<TMessage>(ref TMessage msg, Envelope envelope, IRingBuffer buffer)
+            where TMessage : struct
+        {
+            var successful = _writer.Write(ref envelope, ref msg, buffer);
+            if (successful == false)
+            {
+                var wait = new SpinWait();
+                var counter = 1;
+                do
+                {
+                    if (counter >= _throwAfterNTrials)
+                    {
+                        throw new Exception("Cannot proceed with a write");
+                    }
+                    counter += 1;
+                    wait.SpinOnce();
+                    successful = _writer.Write(ref envelope, ref msg, buffer);
+                } while (successful == false);
+            }
         }
     }
 }

@@ -47,9 +47,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Actors\Impl\AgentRegistryTests.cs" />
+    <Compile Include="Actors\Impl\BusTests.cs" />
     <Compile Include="Actors\Impl\MessageReaderTests.cs" />
     <Compile Include="Actors\Impl\MessageWriterTests.cs" />
     <Compile Include="Actors\Impl\StructSizeCounterTests.cs" />
+    <Compile Include="Actors\Impl\AgentRegistryTestsBase.cs" />
     <Compile Include="Buffers\IndexCalculatorTests.cs" />
     <Compile Include="Buffers\StreamTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

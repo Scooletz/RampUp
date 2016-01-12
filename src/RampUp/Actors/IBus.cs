@@ -21,5 +21,13 @@ namespace RampUp.Actors
         /// <param name="receiver">The identifier.</param>
         void Send<TMessage>(ref TMessage msg, ActorId receiver)
             where TMessage : struct;
+
+        /// <summary>
+        /// Sends to itself the passed message.
+        /// </summary>
+        /// <typeparam name="TMessage">The message type.</typeparam>
+        /// <param name="msg">The message</param>
+        void SendToMe<TMessage>(ref TMessage msg)
+            where TMessage : struct;
     }
 }

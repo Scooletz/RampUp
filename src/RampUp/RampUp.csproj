@@ -42,7 +42,10 @@
   <ItemGroup>
     <Compile Include="Actors\ActorId.cs" />
     <Compile Include="Actors\Envelope.cs" />
+    <Compile Include="Actors\IBus.cs" />
     <Compile Include="Actors\IHandle.cs" />
+    <Compile Include="Actors\Impl\AgentRegistry.cs" />
+    <Compile Include="Actors\Impl\Bus.cs" />
     <Compile Include="Actors\Impl\IMessageWriter.cs" />
     <Compile Include="Actors\Impl\IStructSizeCounter.cs" />
     <Compile Include="Actors\Impl\MessageReader.cs" />
