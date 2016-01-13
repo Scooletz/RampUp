@@ -6,7 +6,7 @@ using RampUp.Actors.Impl;
 
 namespace RampUp.Tests.Actors.Impl
 {
-    public class BusTests : AgentRegistryTestsBase
+    public class BusTests : ActorRegistryTestsBase
     {
         private const int RetryCount = 3;
         private IMessageWriter _writer;

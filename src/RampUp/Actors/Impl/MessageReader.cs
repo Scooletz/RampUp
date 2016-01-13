@@ -27,7 +27,7 @@ namespace RampUp.Actors.Impl
         private static DynamicMethod BuildDispatchingMethod(IActor handler, IStructSizeCounter counter, Func<Type, int> messageIdGetter)
         {
             var handlerType = handler.GetType();
-            var handleMethods = AgentRegistry.GetHandleMethods(handlerType)
+            var handleMethods = ActorRegistry.GetHandleMethods(handlerType)
                     .ToDictionary(m => messageIdGetter(m.GetParameters()[1].ParameterType.GetElementType()), m => m)
                     .OrderBy(kvp => kvp.Key)
                     .ToArray();

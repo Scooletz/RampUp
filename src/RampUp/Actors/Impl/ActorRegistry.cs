@@ -7,26 +7,26 @@ using RampUp.Ring;
 namespace RampUp.Actors.Impl
 {
     /// <summary>
-    /// This class holds a registry of agents, aggregating them and precalculating different queries that are run against them.
+    /// This class holds a registry of actors, aggregating them and precalculating different queries that are run against them.
     /// </summary>
-    public sealed class AgentRegistry
+    public sealed class ActorRegistry
     {
         private readonly IRingBuffer[][] _buffersPerMessageType;
         private readonly Dictionary<Type, int> _messageIdentifiers;
         private readonly IRingBuffer[] _buffers;
 
-        public AgentRegistry(IReadOnlyCollection<Tuple<IActor, IRingBuffer, ActorId>> actors)
+        public ActorRegistry(IReadOnlyCollection<Tuple<IActor, IRingBuffer, ActorId>> actors)
         {
             if (actors.Count > ActorId.MaxValue)
             {
                 throw new ArgumentException("To many actors");
             }
 
-            _messageIdentifiers = actors.Select(t=>t.Item1)
+            _messageIdentifiers = actors.Select(t => t.Item1)
                 .Select(a => a.GetType())
                 .SelectMany(GetHandledMessageTypes)
                 .Distinct()
-                .Select((t, i) => Tuple.Create(t, i))
+                .Select((t, i) => Tuple.Create(t, i + 1))
                 .ToDictionary(t => t.Item1, t => t.Item2);
 
             if (_messageIdentifiers.Count == 0)
@@ -37,13 +37,13 @@ namespace RampUp.Actors.Impl
             var ringsGroupedByMessageId = actors.SelectMany(
                 t =>
                     GetHandledMessageTypes(t.Item1.GetType())
-                        .Select(messageType => new {MessageTypeId = _messageIdentifiers[messageType], Buffer = t.Item2}))
+                        .Select(messageType => new { MessageTypeId = _messageIdentifiers[messageType], Buffer = t.Item2 }))
                 .GroupBy(a => a.MessageTypeId);
 
-            _buffersPerMessageType = new IRingBuffer[_messageIdentifiers.Count][];
+            _buffersPerMessageType = new IRingBuffer[_messageIdentifiers.Count + 1][];
             foreach (var rings in ringsGroupedByMessageId)
             {
-                _buffersPerMessageType[rings.Key] = rings.Select(a=>a.Buffer).ToArray();
+                _buffersPerMessageType[rings.Key] = rings.Select(a => a.Buffer).ToArray();
             }
 
             var max = actors.Max(t => t.Item3.Value);
@@ -80,11 +80,11 @@ namespace RampUp.Actors.Impl
             return handlerType.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
                 .Where(mi =>
                 {
-                    var isHandle = mi.Name == "Handle" && mi.ReturnType == typeof (void);
+                    var isHandle = mi.Name == "Handle" && mi.ReturnType == typeof(void);
                     var parameterTypes = mi.GetParameters().Select(p => p.ParameterType).ToArray();
                     return isHandle &&
                            parameterTypes.Length == 2 &&
-                           parameterTypes[0] == typeof (Envelope).MakeByRefType() &&
+                           parameterTypes[0] == typeof(Envelope).MakeByRefType() &&
                            parameterTypes[1].IsByRef &&
                            parameterTypes[1].GetElementType().IsValueType;
                 });

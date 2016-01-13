@@ -18,7 +18,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DefineConstants>TRACE;DEBUG</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -44,7 +44,7 @@
     <Compile Include="Actors\Envelope.cs" />
     <Compile Include="Actors\IBus.cs" />
     <Compile Include="Actors\IHandle.cs" />
-    <Compile Include="Actors\Impl\AgentRegistry.cs" />
+    <Compile Include="Actors\Impl\ActorRegistry.cs" />
     <Compile Include="Actors\Impl\Bus.cs" />
     <Compile Include="Actors\Impl\IMessageWriter.cs" />
     <Compile Include="Actors\Impl\IStructSizeCounter.cs" />

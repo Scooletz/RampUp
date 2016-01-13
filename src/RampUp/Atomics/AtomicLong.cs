@@ -22,23 +22,41 @@ namespace RampUp.Atomics
             }
             _ptr = (long*)ptr;
         }
-
+#if NOTESTS
         [Pure]
-        public long ReadImpl()
+        public long Read()
         {
             return *_ptr;
         }
 
         [Pure]
-        public long Read()
+        public void Write(long value)
         {
-            return Mocks.AtomicLong.Read((IntPtr) _ptr);
+            *_ptr = value;
         }
 
         [Pure]
-        private void WriteImpl(long value)
+        public long VolatileRead()
         {
-            *_ptr = value;
+            return Volatile.Read(ref *_ptr);
+        }
+
+        [Pure]
+        public void VolatileWrite(long value)
+        {
+            Volatile.Write(ref *_ptr, value);
+        }
+
+        [Pure]
+        public long CompareExchange(long value, long comparand)
+        {
+            return Interlocked.CompareExchange(ref *_ptr, value, comparand);
+        }
+#else
+        [Pure]
+        public long Read()
+        {
+            return Mocks.AtomicLong.Read((IntPtr) _ptr);
         }
 
         [Pure]
@@ -48,21 +66,9 @@ namespace RampUp.Atomics
         }
 
         [Pure]
-        private long VolatileReadImpl()
-        {
-            return Volatile.Read(ref *_ptr);
-        }
-
-        [Pure]
         public long VolatileRead()
         {
             return Mocks.AtomicLong.VolatileRead((IntPtr) _ptr);
-        }
-
-        [Pure]
-        private void VolatileWriteImpl(long value)
-        {
-            Volatile.Write(ref *_ptr, value);
         }
 
         [Pure]
@@ -72,17 +78,11 @@ namespace RampUp.Atomics
         }
 
         [Pure]
-        private long CompareExchangeImpl(long value, long comparand)
-        {
-            return Interlocked.CompareExchange(ref *_ptr, value, comparand);
-        }
-
-        [Pure]
         public long CompareExchange(long value, long comparand)
         {
             return Mocks.AtomicLong.CompareExchange((IntPtr) _ptr, value, comparand);
         }
-
+#endif
         public override string ToString()
         {
             return $"Under address {(IntPtr)_ptr} stores value {*_ptr}";

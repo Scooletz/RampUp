@@ -7,7 +7,7 @@ using RampUp.Ring;
 
 namespace RampUp.Tests.Actors.Impl
 {
-    public abstract class AgentRegistryTestsBase
+    public abstract class ActorRegistryTestsBase
     {
         protected static readonly ActorId NoopId = new ActorId(1);
         protected readonly ActorId AId = new ActorId(2);
@@ -15,7 +15,7 @@ namespace RampUp.Tests.Actors.Impl
         protected IRingBuffer NopBuffer;
         protected IRingBuffer ABuffer;
         protected IRingBuffer AbBuffer;
-        protected AgentRegistry Registry;
+        protected ActorRegistry Registry;
 
         public class NopHandler : IActor
         {
@@ -57,7 +57,7 @@ namespace RampUp.Tests.Actors.Impl
             ABuffer = Substitute.For<IRingBuffer>();
             AbBuffer = Substitute.For<IRingBuffer>();
 
-            Registry = new AgentRegistry(new[]
+            Registry = new ActorRegistry(new[]
             {
                 Tuple.Create<IActor, IRingBuffer, ActorId>(new NopHandler(), NopBuffer, NoopId),
                 Tuple.Create<IActor, IRingBuffer, ActorId>(new AHandler(), ABuffer, AId),

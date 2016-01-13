@@ -7,11 +7,11 @@ namespace RampUp.Actors.Impl
     public sealed class Bus : IBus
     {
         private readonly ActorId _owner;
-        private readonly AgentRegistry _registry;
+        private readonly ActorRegistry _registry;
         private readonly int _throwAfterNTrials;
         private readonly IMessageWriter _writer;
 
-        public Bus(ActorId owner, AgentRegistry registry, int throwAfterNTrials, IMessageWriter writer)
+        public Bus(ActorId owner, ActorRegistry registry, int throwAfterNTrials, IMessageWriter writer)
         {
             _owner = owner;
             _registry = registry;

@@ -7,7 +7,7 @@ using RampUp.Ring;
 
 namespace RampUp.Tests.Actors.Impl
 {
-    public class AgentRegistryTests : AgentRegistryTestsBase
+    public class ActorRegistryTests : ActorRegistryTestsBase
     {
         [Test]
         public void MessageTypeIdsAreAssignedUniquelyAndContinouslyFromZero()
@@ -15,7 +15,7 @@ namespace RampUp.Tests.Actors.Impl
             var messageTypes = new[] { typeof(A), typeof(B) };
             var ids = messageTypes.Select(t => Registry.GetMessageTypeId(t)).OrderBy(k => k);
 
-            CollectionAssert.AreEqual(new[] { 0, 1 }, ids);
+            CollectionAssert.AreEqual(new[] { 1, 2 }, ids);
         }
 
         [Test]
@@ -40,7 +40,7 @@ namespace RampUp.Tests.Actors.Impl
         [Test]
         public void UselessRegistryThrows()
         {
-            Assert.Throws<ArgumentException>(() => { new AgentRegistry(new Tuple<IActor, IRingBuffer, ActorId>[0]); });
+            Assert.Throws<ArgumentException>(() => { new ActorRegistry(new Tuple<IActor, IRingBuffer, ActorId>[0]); });
         }
 
     }
