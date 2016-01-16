@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Reflection;
+using System.Reflection.Emit;
 using NUnit.Framework;
 using RampUp.Actors;
 using RampUp.Actors.Impl;
 using RampUp.Buffers;
 using RampUp.Ring;
-using RampUp.Tests.Actors.Impl;
 
 namespace RampUp.Tests
 {
@@ -31,9 +32,14 @@ namespace RampUp.Tests
             {
                 buffer.Write(5, new ByteChunk());
                 buffer.Read((a, b) => { }, 1);
-
+                
+                var module = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName("ActorsTestsDynAssembly"),
+                    AssemblyBuilderAccess.Run).DefineDynamicModule("main");
+                var counter = new StructSizeCounter();
                 var registry = new ActorRegistry(new[] { Tuple.Create((IActor)new Handler(), (IRingBuffer)buffer, new ActorId(1)) });
-                var bus = new Bus(new ActorId(2), registry, 1, new MessageWriter(new StructSizeCounter(), new[] { typeof(A) }, registry.GetMessageTypeId));
+                var writer = BaseMessageWriter.Build(counter, registry.GetMessageTypeId, new[] {typeof (A)}, module);
+
+                var bus = new Bus(new ActorId(2), registry, 1, writer);
 
                 var msg = new A();
                 bus.Publish(ref msg);

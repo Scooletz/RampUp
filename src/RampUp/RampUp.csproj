@@ -45,11 +45,11 @@
     <Compile Include="Actors\IBus.cs" />
     <Compile Include="Actors\IHandle.cs" />
     <Compile Include="Actors\Impl\ActorRegistry.cs" />
+    <Compile Include="Actors\Impl\BaseMessageWriter.cs" />
     <Compile Include="Actors\Impl\Bus.cs" />
     <Compile Include="Actors\Impl\IMessageWriter.cs" />
     <Compile Include="Actors\Impl\IStructSizeCounter.cs" />
     <Compile Include="Actors\Impl\MessageReader.cs" />
-    <Compile Include="Actors\Impl\MessageWriter.cs" />
     <Compile Include="Actors\Impl\StructSizeCounter.cs" />
     <Compile Include="Atomics\AtomicInt.cs" />
     <Compile Include="Atomics\AtomicLong.cs" />
