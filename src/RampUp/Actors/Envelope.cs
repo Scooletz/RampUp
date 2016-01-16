@@ -1,11 +1,12 @@
 ﻿using System.Runtime.InteropServices;
+using RampUp.Ring;
 
 namespace RampUp.Actors
 {
     /// <summary>
     /// The envelope being sent with each message
     /// </summary>
-    [StructLayout(LayoutKind.Explicit, Size = Native.CacheLineSize)]
+    [StructLayout(LayoutKind.Explicit, Size = RingBufferDescriptor.RecordAlignment)]
     public struct Envelope
     {
         /// <summary>

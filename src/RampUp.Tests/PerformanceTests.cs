@@ -32,12 +32,12 @@ namespace RampUp.Tests
             {
                 buffer.Write(5, new ByteChunk());
                 buffer.Read((a, b) => { }, 1);
-                
+
                 var module = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName("ActorsTestsDynAssembly"),
                     AssemblyBuilderAccess.Run).DefineDynamicModule("main");
                 var counter = new StructSizeCounter();
                 var registry = new ActorRegistry(new[] { Tuple.Create((IActor)new Handler(), (IRingBuffer)buffer, new ActorId(1)) });
-                var writer = BaseMessageWriter.Build(counter, registry.GetMessageTypeId, new[] {typeof (A)}, module);
+                var writer = BaseMessageWriter.Build(counter, registry.GetMessageTypeId, new[] { typeof(A) }, module);
 
                 var bus = new Bus(new ActorId(2), registry, 1, writer);
 
@@ -46,11 +46,12 @@ namespace RampUp.Tests
 
                 // publication is prepared do it
                 var sw = Stopwatch.StartNew();
-                for (var i = 0; i < 10.Megabytes(); i++)
+                var howMany = 20.Megabytes();
+                for (var i = 0; i < howMany; i++)
                 {
                     bus.Publish(ref msg);
                 }
-                Console.WriteLine(sw.Elapsed);
+                Console.WriteLine($"{howMany} messages written in {sw.Elapsed}");
             }
         }
     }
