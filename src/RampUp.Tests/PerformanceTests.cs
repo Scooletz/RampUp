@@ -29,12 +29,13 @@ namespace RampUp.Tests
         }
 
         [Test]
-        public void Actors()
+        public unsafe void Actors()
         {
             using (var buffer =
-                new ManyToOneRingBuffer(new UnsafeBuffer(512.Megabytes() + RingBufferDescriptor.TrailerLength)))
+                new ManyToOneRingBuffer(new UnsafeBuffer(1024.Megabytes() + RingBufferDescriptor.TrailerLength)))
             {
-                buffer.Write(5, new ByteChunk());
+                var someBytes = stackalloc byte[1];
+                buffer.Write(5, new ByteChunk(someBytes, 1));
                 buffer.Read((a, b) => { }, 1);
 
                 var module = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName("ActorsTestsDynAssembly"),
@@ -44,7 +45,7 @@ namespace RampUp.Tests
                     new ActorRegistry(new[] {Tuple.Create((IActor) new Handler(), (IRingBuffer) buffer, new ActorId(1))});
                 var writer = BaseMessageWriter.Build(counter, registry.GetMessageTypeId, new[] {typeof (A)}, module);
 
-                var bus = new Bus(new ActorId(2), registry, 1, writer);
+                var bus = new Bus(new ActorId(2), registry, 20, writer);
 
                 var msg = new A();
                 bus.Publish(ref msg);
