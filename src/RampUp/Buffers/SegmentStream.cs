@@ -12,9 +12,9 @@ namespace RampUp.Buffers
         private readonly IndexCalculator _calculator;
         private Segment* _head = null;
         private Segment* _tail = null;
-        private long _length;
-        private long _position;
-        private long _capacity;
+        private int _length;
+        private int _position;
+        private int _capacity;
 
         internal SegmentStream(ISegmentPool pool)
         {
@@ -77,10 +77,10 @@ namespace RampUp.Buffers
                 throw new NotImplementedException("Not implemented yet");
             }
 
-            _length = value;
+            _length = (int) value;
             if (_position > value)
             {
-                _position = value;
+                _position = (int) value;
             }
         }
 
@@ -156,7 +156,7 @@ namespace RampUp.Buffers
                 return 0;
 
             var alreadyCopied = 0;
-            var toCopy = (int) Math.Min(slice.Count, _length - _position);
+            var toCopy = Math.Min(slice.Count, _length - _position);
             while (toCopy > 0)
             {
                 var index = _calculator.GetSegmentIndex(_position);
@@ -340,7 +340,7 @@ namespace RampUp.Buffers
             {
                 if (value < 0 || value > Length)
                     throw new ArgumentOutOfRangeException("value");
-                _position = value;
+                _position = (int) value;
             }
         }
 
