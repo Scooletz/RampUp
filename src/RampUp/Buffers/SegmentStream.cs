@@ -3,6 +3,9 @@ using System.IO;
 
 namespace RampUp.Buffers
 {
+    /// <summary>
+    /// A stream based on <see cref="ISegmentPool"/> using its segments as chunks to build up the stream.
+    /// </summary>
     public sealed unsafe class SegmentStream : Stream
     {
         private readonly ISegmentPool _pool;
@@ -137,11 +140,23 @@ namespace RampUp.Buffers
 
         public override int Read(byte[] buffer, int offset, int count)
         {
+            var slice = new ByteSlice(buffer, offset, count);
+            return ReadImpl(ref slice);
+        }
+
+        public int Read(ByteChunk chunk)
+        {
+            var slice = new ByteSlice(chunk);
+            return ReadImpl(ref slice);
+        }
+
+        private int ReadImpl(ref ByteSlice slice)
+        {
             if (_position >= _length)
                 return 0;
 
             var alreadyCopied = 0;
-            var toCopy = (int)Math.Min(count, _length - _position);
+            var toCopy = (int) Math.Min(slice.Count, _length - _position);
             while (toCopy > 0)
             {
                 var index = _calculator.GetSegmentIndex(_position);
@@ -153,7 +168,7 @@ namespace RampUp.Buffers
                 if (bytesToRead > 0)
                 {
                     var segmentBuffer = segment->Buffer;
-                    Native.MemcpyFromUnmanaged(buffer, offset + alreadyCopied, segmentBuffer, indexInSegment, bytesToRead);
+                    slice.CopyFrom(alreadyCopied, segmentBuffer, indexInSegment, bytesToRead);
                     alreadyCopied += bytesToRead;
                     toCopy -= bytesToRead;
                     _position += bytesToRead;
@@ -180,8 +195,21 @@ namespace RampUp.Buffers
 
         public override void Write(byte[] buffer, int offset, int count)
         {
+            var slice = new ByteSlice(buffer, offset, count);
+            WriteImpl(ref slice);
+        }
+
+        public void Write(ByteChunk chunk)
+        {
+            var slice = new ByteSlice(chunk);
+            WriteImpl(ref slice);
+        }
+
+        private void WriteImpl(ref ByteSlice slice)
+        {
+            var offset = 0;
             var bytesLeft = _capacity - _position;
-            var bytesToAlloc = count - bytesLeft;
+            var bytesToAlloc = slice.Count - bytesLeft;
             if (bytesToAlloc > 0)
             {
                 var numberOfSegments = _calculator.GetSegmentIndex(bytesToAlloc) + 1;
@@ -194,7 +222,7 @@ namespace RampUp.Buffers
             var currentSegment = FindSegment(index);
 
             // intial segment selected, do writing
-            var toWrite = count;
+            var toWrite = slice.Count;
             do
             {
                 var currentSegmentIndex = _calculator.GetIndexInSegment(_position);
@@ -204,7 +232,7 @@ namespace RampUp.Buffers
                 spaceToWrite = spaceToWrite > toWrite ? toWrite : spaceToWrite;
                 if (spaceToWrite > 0)
                 {
-                    Native.MemcpyToUnmanaged(segmentBuffer, currentSegmentIndex, buffer, offset, spaceToWrite);
+                    slice.CopyTo(segmentBuffer, currentSegmentIndex, spaceToWrite, offset);
                 }
 
                 toWrite -= spaceToWrite;
@@ -297,32 +325,17 @@ namespace RampUp.Buffers
             return currentSegment;
         }
 
-        public override bool CanRead
-        {
-            get { return true; }
-        }
+        public override bool CanRead => true;
 
-        public override bool CanSeek
-        {
-            get { return true; }
-        }
+        public override bool CanSeek => true;
 
-        public override bool CanWrite
-        {
-            get { return true; }
-        }
+        public override bool CanWrite => true;
 
-        public override long Length
-        {
-            get { return _length; }
-        }
+        public override long Length => _length;
 
         public override long Position
         {
-            get
-            {
-                return _position;
-            }
+            get { return _position; }
             set
             {
                 if (value < 0 || value > Length)

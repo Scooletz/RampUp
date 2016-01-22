@@ -65,6 +65,7 @@
     <Compile Include="Atomics\AtomicLong.cs" />
     <Compile Include="Atomics\IAtomicInt.cs" />
     <Compile Include="Buffers\ByteChunk.cs" />
+    <Compile Include="Buffers\ByteSlice.cs" />
     <Compile Include="Buffers\Extensions.cs" />
     <Compile Include="Buffers\IndexCalculator.cs" />
     <Compile Include="Buffers\ISegmentPool.cs" />
