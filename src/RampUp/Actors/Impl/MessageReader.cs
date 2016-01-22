@@ -3,12 +3,11 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using RampUp.Buffers;
-using RampUp.Ring;
 
 namespace RampUp.Actors.Impl
 {
     /// <summary>
-    /// Builds up a dynamic <see cref="MessageHandlerImpl"/> matching <see cref="MessageHandler"/> for a given actor.
+    /// Builds up a dynamic <see cref="MessageHandlerImpl"/> matching <see cref="Ring.MessageHandler"/> for a given actor.
     /// </summary>
     public sealed class MessageReader
     {
@@ -16,21 +15,24 @@ namespace RampUp.Actors.Impl
         private readonly IActor _handler;
         private readonly Action<MessageReader, int, ByteChunk> _reader;
 
-        public MessageReader(IActor handler, IStructSizeCounter counter, Func<Type,int> messageIdGetter)
+        public MessageReader(IActor handler, IStructSizeCounter counter, Func<Type, int> messageIdGetter)
         {
             _handler = handler;
-            var dm = BuildDispatchingMethod(handler, counter,messageIdGetter);
+            var dm = BuildDispatchingMethod(handler, counter, messageIdGetter);
 
-            _reader = (Action<MessageReader, int, ByteChunk>)dm.CreateDelegate(typeof(Action<MessageReader, int, ByteChunk>));
+            _reader =
+                (Action<MessageReader, int, ByteChunk>)
+                    dm.CreateDelegate(typeof (Action<MessageReader, int, ByteChunk>));
         }
 
-        private static DynamicMethod BuildDispatchingMethod(IActor handler, IStructSizeCounter counter, Func<Type, int> messageIdGetter)
+        private static DynamicMethod BuildDispatchingMethod(IActor handler, IStructSizeCounter counter,
+            Func<Type, int> messageIdGetter)
         {
             var handlerType = handler.GetType();
             var handleMethods = ActorRegistry.GetHandleMethods(handlerType)
-                    .ToDictionary(m => messageIdGetter(m.GetParameters()[1].ParameterType.GetElementType()), m => m)
-                    .OrderBy(kvp => kvp.Key)
-                    .ToArray();
+                .ToDictionary(m => messageIdGetter(m.GetParameters()[1].ParameterType.GetElementType()), m => m)
+                .OrderBy(kvp => kvp.Key)
+                .ToArray();
 
             var dm = new DynamicMethod("ReadMessagesFor_" + handlerType.Namespace.Replace(".", "_") + handlerType.Name,
                 typeof (void), new[] {typeof (MessageReader), typeof (int), typeof (ByteChunk)},
@@ -52,8 +54,8 @@ namespace RampUp.Actors.Impl
 
             // push payload
             il.Emit(OpCodes.Ldarg_2);
-            il.Emit(OpCodes.Ldfld, typeof(ByteChunk).GetField("Pointer"));
-            il.Emit(OpCodes.Ldc_I4, counter.GetSize(typeof(Envelope)));
+            il.Emit(OpCodes.Ldfld, typeof (ByteChunk).GetField("Pointer"));
+            il.Emit(OpCodes.Ldc_I4, counter.GetSize(typeof (Envelope)));
             il.Emit(OpCodes.Add);
 
             var endLbl = il.DefineLabel();

@@ -1,44 +1,20 @@
 using System;
-using System.IO;
 
 namespace RampUp.Buffers
 {
     /// <summary>
     /// A stream based on <see cref="ISegmentPool"/> using its segments as chunks to build up the stream.
     /// </summary>
-    public sealed unsafe class SegmentStream : Stream
+    public sealed unsafe class SegmentStream : ReadonlySegmentStream
     {
         private readonly ISegmentPool _pool;
-        private readonly IndexCalculator _calculator;
-        private Segment* _head = null;
         private Segment* _tail = null;
-        private int _length;
-        private int _position;
         private int _capacity;
 
-        internal SegmentStream(ISegmentPool pool)
+        internal SegmentStream(ISegmentPool pool) :
+            base(new IndexCalculator(pool.SegmentLength))
         {
             _pool = pool;
-            _calculator = new IndexCalculator(pool.SegmentLength);
-        }
-
-        public override long Seek(long offset, SeekOrigin origin)
-        {
-            switch (origin)
-            {
-                case SeekOrigin.Begin:
-                    Position = offset;
-                    break;
-                case SeekOrigin.End:
-                    Position = _length + offset;
-                    break;
-                case SeekOrigin.Current:
-                    Position = _position + offset;
-                    break;
-                default:
-                    throw new ArgumentException("SeekOrigin: " + origin);
-            }
-            return Position;
         }
 
         public override void SetLength(long value)
@@ -50,12 +26,12 @@ namespace RampUp.Buffers
 
             if (value == 0)
             {
-                if (_head != null)
+                if (Head != null)
                 {
-                    _pool.Push(_head);
+                    _pool.Push(Head);
                 }
 
-                _head = null;
+                Head = null;
                 _tail = null;
                 _length = 0;
                 _position = 0;
@@ -63,8 +39,8 @@ namespace RampUp.Buffers
                 return;
             }
 
-            var currentNumberOfSegments = _calculator.GetSegmentIndex(_length);
-            var nextNumberOfSegments = _calculator.GetSegmentIndex(value);
+            var currentNumberOfSegments = Calculator.GetSegmentIndex(_length);
+            var nextNumberOfSegments = Calculator.GetSegmentIndex(value);
 
             if (currentNumberOfSegments < nextNumberOfSegments)
             {
@@ -94,9 +70,9 @@ namespace RampUp.Buffers
             Segment* segment;
             if (_pool.TryPop(segmentsToObtain, out segment) == segmentsToObtain)
             {
-                if (_head == null)
+                if (Head == null)
                 {
-                    _head = segment;
+                    Head = segment;
                     _tail = GetTailOrThis(segment);
                 }
                 else
@@ -123,76 +99,6 @@ namespace RampUp.Buffers
             }
         }
 
-        private static Segment* GetTailOrThis(Segment* segment)
-        {
-            if (segment == null)
-            {
-                return null;
-            }
-
-            var tail = segment;
-            while (tail->Next != null)
-            {
-                tail = tail->Next;
-            }
-            return tail;
-        }
-
-        public override int Read(byte[] buffer, int offset, int count)
-        {
-            var slice = new ByteSlice(buffer, offset, count);
-            return ReadImpl(ref slice);
-        }
-
-        public int Read(ByteChunk chunk)
-        {
-            var slice = new ByteSlice(chunk);
-            return ReadImpl(ref slice);
-        }
-
-        private int ReadImpl(ref ByteSlice slice)
-        {
-            if (_position >= _length)
-                return 0;
-
-            var alreadyCopied = 0;
-            var toCopy = Math.Min(slice.Count, _length - _position);
-            while (toCopy > 0)
-            {
-                var index = _calculator.GetSegmentIndex(_position);
-                var indexInSegment = _calculator.GetIndexInSegment(_position);
-
-                var segment = FindSegment(index);
-
-                var bytesToRead = Math.Min(segment->Length - indexInSegment, toCopy);
-                if (bytesToRead > 0)
-                {
-                    var segmentBuffer = segment->Buffer;
-                    slice.CopyFrom(alreadyCopied, segmentBuffer, indexInSegment, bytesToRead);
-                    alreadyCopied += bytesToRead;
-                    toCopy -= bytesToRead;
-                    _position += bytesToRead;
-                }
-            }
-
-            return alreadyCopied;
-        }
-
-        public override int ReadByte()
-        {
-            if (_position >= Length)
-                return -1;
-
-            var index = _calculator.GetSegmentIndex(_position);
-            var currentSegment = FindSegment(index);
-            var currentSegmentIndex = _calculator.GetIndexInSegment(_position);
-
-            _position += 1;
-
-            var buffer = currentSegment->Buffer;
-            return buffer[currentSegmentIndex];
-        }
-
         public override void Write(byte[] buffer, int offset, int count)
         {
             var slice = new ByteSlice(buffer, offset, count);
@@ -212,12 +118,12 @@ namespace RampUp.Buffers
             var bytesToAlloc = slice.Count - bytesLeft;
             if (bytesToAlloc > 0)
             {
-                var numberOfSegments = _calculator.GetSegmentIndex(bytesToAlloc) + 1;
+                var numberOfSegments = Calculator.GetSegmentIndex(bytesToAlloc) + 1;
                 AddSegments(numberOfSegments);
             }
 
             // find initial segment to write
-            var index = _calculator.GetSegmentIndex(_position);
+            var index = Calculator.GetSegmentIndex(_position);
 
             var currentSegment = FindSegment(index);
 
@@ -225,7 +131,7 @@ namespace RampUp.Buffers
             var toWrite = slice.Count;
             do
             {
-                var currentSegmentIndex = _calculator.GetIndexInSegment(_position);
+                var currentSegmentIndex = Calculator.GetIndexInSegment(_position);
                 var segmentBuffer = currentSegment->Buffer;
                 var spaceToWrite = currentSegment->Length - currentSegmentIndex;
 
@@ -263,9 +169,9 @@ namespace RampUp.Buffers
             else
             {
                 // a more like usual Write path, find segment and index, write to the array directly, change the position
-                var index = _calculator.GetSegmentIndex(_position);
+                var index = Calculator.GetSegmentIndex(_position);
                 var currentSegment = FindSegment(index);
-                var currentSegmentIndex = _calculator.GetIndexInSegment(_position);
+                var currentSegmentIndex = Calculator.GetIndexInSegment(_position);
 
                 var arraySegment = currentSegment->Buffer;
                 arraySegment[currentSegmentIndex] = value;
@@ -312,50 +218,32 @@ namespace RampUp.Buffers
         //    }
         //}
 
-        private Segment* FindSegment(int index)
-        {
-            //TODO: possibly read from memoized position in midpoint?
-            // for small streams (less than 8kb) is worthless as getting the 2nd is one hop from head
-            // for extremely long, this may save the day
-            var currentSegment = _head;
-            for (var i = 0; i < index; i++)
-            {
-                currentSegment = currentSegment->Next;
-            }
-            return currentSegment;
-        }
-
-        public override bool CanRead => true;
-
-        public override bool CanSeek => true;
-
-        public override bool CanWrite => true;
-
-        public override long Length => _length;
-
-        public override long Position
-        {
-            get { return _position; }
-            set
-            {
-                if (value < 0 || value > Length)
-                    throw new ArgumentOutOfRangeException("value");
-                _position = (int) value;
-            }
-        }
-
-        public override void Flush()
-        {
-        }
-
         protected override void Dispose(bool disposing)
         {
-            if (_head != null)
+            if (Head != null)
             {
-                _pool.Push(_head);
+                _pool.Push(Head);
             }
 
             base.Dispose(disposing);
         }
+
+        /// <summary>
+        /// Wraps the whole content from this instance in a context object. This effectively means that no segments are returned to the pool but rather are passes by ref in the context.
+        /// </summary>
+        /// <param name="ctx">The context to be returned.</param>
+        // ReSharper disable once RedundantAssignment
+        public void WrapInContext(ref Payload ctx)
+        {
+            ctx = new Payload(Head, Calculator, _length, _position);
+
+            Head = null;
+            _tail = null;
+            _length = 0;
+            _position = 0;
+            _capacity = 0;
+        }
+
+        public override bool CanWrite => true;
     }
 }

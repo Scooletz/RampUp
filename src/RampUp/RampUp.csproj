@@ -70,6 +70,7 @@
     <Compile Include="Buffers\IndexCalculator.cs" />
     <Compile Include="Buffers\ISegmentPool.cs" />
     <Compile Include="Buffers\IUnsafeBuffer.cs" />
+    <Compile Include="Buffers\ReadonlySegmentStream.cs" />
     <Compile Include="Buffers\SingleThreadSegmentPool.cs" />
     <Compile Include="Buffers\Segment.cs" />
     <Compile Include="Buffers\SegmentStream.cs" />

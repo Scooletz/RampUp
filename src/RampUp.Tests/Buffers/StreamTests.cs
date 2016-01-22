@@ -101,7 +101,7 @@ namespace RampUp.Tests.Buffers
 
         private static void Throws(TestDelegate testDelegate)
         {
-            Assert.Throws(Is.AssignableTo(typeof(Exception)), testDelegate);
+            Assert.Throws(Is.AssignableTo(typeof (Exception)), testDelegate);
         }
 
         [Test]
@@ -136,7 +136,7 @@ namespace RampUp.Tests.Buffers
             var buffer = new byte[2];
             var read = _stream.Read(buffer, 0, 2);
             Assert.AreEqual(0, read);
-            CollectionAssert.AreEquivalent(new byte[] { 0, 0 }, buffer);
+            CollectionAssert.AreEquivalent(new byte[] {0, 0}, buffer);
         }
 
         [Test]
@@ -172,7 +172,7 @@ namespace RampUp.Tests.Buffers
             Assert.AreEqual(length + seekBy, _stream.Position);
         }
 
-        [TestCase(-1L, ExpectedException = typeof(ArgumentException))]
+        [TestCase(-1L, ExpectedException = typeof (ArgumentException))]
         [TestCase(0L)]
         [TestCase(1L)]
         [TestCase(1L)]
@@ -184,8 +184,8 @@ namespace RampUp.Tests.Buffers
             Assert.AreEqual(length, _stream.Length);
         }
 
-        [TestCase(new object[] { new[] { 10, 200, 400, 800, 1000, 2000, 4000 } }, TestName = "Short to long elements")]
-        [TestCase(new object[] { new[] { 4094, 1, 2, 4090, 127 } }, TestName = "Buffer boundaries")]
+        [TestCase(new object[] {new[] {10, 200, 400, 800, 1000, 2000, 4000}}, TestName = "Short to long elements")]
+        [TestCase(new object[] {new[] {4094, 1, 2, 4090, 127}}, TestName = "Buffer boundaries")]
         public void ReadWrite(int[] lengths)
         {
             var total = lengths.Sum();
@@ -209,8 +209,8 @@ namespace RampUp.Tests.Buffers
             CollectionAssert.AreEqual(bytes, ms.ToArray());
         }
 
-        [TestCase(0, TestName="No offset at all")]
-        [TestCase(1, TestName =  "Skipping one")]
+        [TestCase(0, TestName = "No offset at all")]
+        [TestCase(1, TestName = "Skipping one")]
         public void NewCopyShouldCopyLikeBaseCopy(int offset)
         {
             var bytes = new byte[9345];
@@ -223,7 +223,7 @@ namespace RampUp.Tests.Buffers
             _stream.Seek(offset, SeekOrigin.Begin);
 
             var newCopy = new MemoryStream();
-            ((RampUp.Buffers.SegmentStream)_stream).CopyTo(newCopy);
+            ((SegmentStream) _stream).CopyTo(newCopy);
 
             CollectionAssert.AreEqual(bytes.Skip(offset), newCopy.ToArray());
         }
