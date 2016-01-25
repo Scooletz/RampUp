@@ -15,5 +15,27 @@
         void Handle(ref Envelope envelope, ref TMessage msg);
     }
 
-    public interface IActor { }
+    public interface IActor
+    {
+    }
+
+    /// <summary>
+    /// An interface for an idle strategy being executed at the end of each batch of messages.
+    /// </summary>
+    public interface IIdleStrategy
+    {
+        void ProcessingBatchOfMessagesEnded(BatchInfo batch);
+    }
+
+    public struct BatchInfo
+    {
+        public int RequestedNumberOfMessages;
+        public int DispatchedNumberOfMessages;
+
+        public BatchInfo(int requestedNumberOfMessages, int dispatchedNumberOfMessages)
+        {
+            RequestedNumberOfMessages = requestedNumberOfMessages;
+            DispatchedNumberOfMessages = dispatchedNumberOfMessages;
+        }
+    }
 }

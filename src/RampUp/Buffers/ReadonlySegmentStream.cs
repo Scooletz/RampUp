@@ -84,6 +84,20 @@ namespace RampUp.Buffers
             return ReadImpl(ref slice);
         }
 
+        public bool TryWriteToBuffer(int positionInBuffer, IUnsafeBuffer buffer)
+        {
+            var bytesLeftInBuffer = buffer.Size - positionInBuffer;
+            var bytesToWrite = _length - _position;
+            if (bytesLeftInBuffer < bytesToWrite)
+            {
+                return false;
+            }
+
+            var slice = new ByteSlice(new ByteChunk(buffer.RawBytes + positionInBuffer, bytesToWrite));
+            ReadImpl(ref slice);
+            return false;
+        }
+
         private int ReadImpl(ref ByteSlice slice)
         {
             if (_position >= _length)
