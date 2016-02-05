@@ -7,6 +7,8 @@ namespace RampUp.Buffers
     /// </summary>
     public unsafe struct ByteChunk
     {
+        public static readonly ByteChunk Empty = new ByteChunk();
+
         public readonly byte* Pointer;
         public readonly int Length;
 
@@ -24,14 +26,14 @@ namespace RampUp.Buffers
         public override bool Equals(object obj)
         {
             if (ReferenceEquals(null, obj)) return false;
-            return obj is ByteChunk && Equals((ByteChunk)obj);
+            return obj is ByteChunk && Equals((ByteChunk) obj);
         }
 
         public override int GetHashCode()
         {
             unchecked
             {
-                return (int)Pointer * 397 ^ Length;
+                return (int) Pointer*397 ^ Length;
             }
         }
 

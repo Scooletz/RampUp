@@ -23,9 +23,11 @@ namespace RampUp.Tests.Actors.Impl
 
         public class AHandler : IHandle<A>
         {
+            public int ACount;
+
             public void Handle(ref Envelope envelope, ref A msg)
             {
-                throw new System.NotImplementedException();
+                ACount += 1;
             }
         }
 
@@ -35,14 +37,17 @@ namespace RampUp.Tests.Actors.Impl
 
         public class ABHandler : IHandle<A>, IHandle<B>
         {
+            public int ACount;
+            public int BCount;
+
             public void Handle(ref Envelope envelope, ref A msg)
             {
-                throw new System.NotImplementedException();
+                ACount += 1;
             }
 
             public void Handle(ref Envelope envelope, ref B msg)
             {
-                throw new System.NotImplementedException();
+                BCount += 1;
             }
         }
 

@@ -23,18 +23,18 @@ namespace RampUp.Tests.Actors.Impl
         {
             var counter = Substitute.For<IStructSizeCounter>();
             const int aSize = 3;
-            counter.GetSize(typeof(A)).Returns(aSize);
+            counter.GetSize(typeof (A)).Returns(aSize);
             const int envelopeSize = 4;
-            counter.GetSize(typeof(Envelope)).Returns(envelopeSize);
+            counter.GetSize(typeof (Envelope)).Returns(envelopeSize);
 
             var buffer = Substitute.For<IRingBuffer>();
             buffer.Write(0, new ByteChunk()).ReturnsForAnyArgs(true);
             const int messageId = 5;
 
             var asm = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName("AnythingForTests"),
-               AssemblyBuilderAccess.Run);
+                AssemblyBuilderAccess.Run);
             var main = asm.DefineDynamicModule("main");
-            var writer = BaseMessageWriter.Build(counter, l => messageId, new[] { typeof(A) }, main);
+            var writer = BaseMessageWriter.Build(counter, l => messageId, new[] {typeof (A)}, main);
 
             var e = new Envelope(new ActorId(1));
             var a = new A();
@@ -45,23 +45,8 @@ namespace RampUp.Tests.Actors.Impl
             var args = call.GetArguments();
             Assert.AreEqual("Write", call.GetMethodInfo().Name);
             Assert.AreEqual(messageId, args[0]);
-            Assert.AreEqual(new ByteChunk((byte*)&e, envelopeSize), args[1]);
-            Assert.AreEqual(new ByteChunk((byte*)&a, aSize), args[2]);
+            Assert.AreEqual(new ByteChunk((byte*) &e, envelopeSize), args[1]);
+            Assert.AreEqual(new ByteChunk((byte*) &a, aSize), args[2]);
         }
-
-        //[Test]
-        //public void Build()
-        //{
-           
-
-        //    var counter = Substitute.For<IStructSizeCounter>();
-          
-
-        //    var e = new Envelope();
-        //    var a = new Guid();
-        //    var result = writer.Write(ref e, ref a, null);
-
-        //    Assert.IsTrue(result);
-        //}
     }
 }
