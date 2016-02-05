@@ -42,7 +42,8 @@ namespace RampUp.Tests
                     AssemblyBuilderAccess.Run).DefineDynamicModule("main");
                 var counter = new StructSizeCounter();
                 var registry =
-                    new ActorRegistry(new[] {Tuple.Create((IActor) new Handler(), (IRingBuffer) buffer, new ActorId(1))});
+                    new ActorRegistry(new[]
+                    {Tuple.Create(new ActorDescriptor(new Handler()), (IRingBuffer) buffer, new ActorId(1))});
                 var writer = BaseMessageWriter.Build(counter, registry.GetMessageTypeId, new[] {typeof (A)}, module);
 
                 var bus = new Bus(new ActorId(2), registry, 20, writer);

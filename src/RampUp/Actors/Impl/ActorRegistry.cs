@@ -15,7 +15,7 @@ namespace RampUp.Actors.Impl
         private readonly Dictionary<Type, int> _messageIdentifiers;
         private readonly IRingBuffer[] _buffers;
 
-        public ActorRegistry(IReadOnlyCollection<Tuple<IActor, IRingBuffer, ActorId>> actors)
+        public ActorRegistry(IReadOnlyCollection<Tuple<ActorDescriptor, IRingBuffer, ActorId>> actors)
         {
             if (actors.Count > ActorId.MaxValue)
             {
@@ -23,8 +23,7 @@ namespace RampUp.Actors.Impl
             }
 
             _messageIdentifiers = actors.Select(t => t.Item1)
-                .Select(a => a.GetType())
-                .SelectMany(GetHandledMessageTypes)
+                .SelectMany(d => d.HandledMessageTypes)
                 .Distinct()
                 .Select((t, i) => Tuple.Create(t, i + 1))
                 .ToDictionary(t => t.Item1, t => t.Item2);
@@ -36,8 +35,8 @@ namespace RampUp.Actors.Impl
 
             var ringsGroupedByMessageId = actors.SelectMany(
                 t =>
-                    GetHandledMessageTypes(t.Item1.GetType())
-                        .Select(messageType => new { MessageTypeId = _messageIdentifiers[messageType], Buffer = t.Item2 }))
+                    t.Item1.HandledMessageTypes.Select(
+                        messageType => new {MessageTypeId = _messageIdentifiers[messageType], Buffer = t.Item2}))
                 .GroupBy(a => a.MessageTypeId);
 
             _buffersPerMessageType = new IRingBuffer[_messageIdentifiers.Count + 1][];
@@ -75,27 +74,19 @@ namespace RampUp.Actors.Impl
         /// <summary>
         /// Gets all the methods handling messages, declared in <paramref name="handlerType"/>.
         /// </summary>
-        public static IEnumerable<MethodInfo> GetHandleMethods(Type handlerType)
+        internal static IEnumerable<MethodInfo> GetHandleMethods(Type handlerType)
         {
             return handlerType.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
                 .Where(mi =>
                 {
-                    var isHandle = mi.Name == "Handle" && mi.ReturnType == typeof(void);
+                    var isHandle = mi.Name == "Handle" && mi.ReturnType == typeof (void);
                     var parameterTypes = mi.GetParameters().Select(p => p.ParameterType).ToArray();
                     return isHandle &&
                            parameterTypes.Length == 2 &&
-                           parameterTypes[0] == typeof(Envelope).MakeByRefType() &&
+                           parameterTypes[0] == typeof (Envelope).MakeByRefType() &&
                            parameterTypes[1].IsByRef &&
                            parameterTypes[1].GetElementType().IsValueType;
                 });
-        }
-
-        /// <summary>
-        /// Gets all the message types handled by the given <paramref name="handlerType"/>
-        /// </summary>
-        public static IEnumerable<Type> GetHandledMessageTypes(Type handlerType)
-        {
-            return GetHandleMethods(handlerType).Select(m => m.GetParameters()[1].ParameterType.GetElementType());
         }
     }
 }

@@ -54,6 +54,7 @@
     <Compile Include="Actors\Envelope.cs" />
     <Compile Include="Actors\IBus.cs" />
     <Compile Include="Actors\IHandle.cs" />
+    <Compile Include="Actors\Impl\ActorDescriptor.cs" />
     <Compile Include="Actors\Impl\ActorRegistry.cs" />
     <Compile Include="Actors\Impl\BaseMessageWriter.cs" />
     <Compile Include="Actors\Impl\Bus.cs" />

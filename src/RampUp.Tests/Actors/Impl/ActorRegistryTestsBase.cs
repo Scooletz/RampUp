@@ -59,9 +59,9 @@ namespace RampUp.Tests.Actors.Impl
 
             Registry = new ActorRegistry(new[]
             {
-                Tuple.Create<IActor, IRingBuffer, ActorId>(new NopHandler(), NopBuffer, NoopId),
-                Tuple.Create<IActor, IRingBuffer, ActorId>(new AHandler(), ABuffer, AId),
-                Tuple.Create<IActor, IRingBuffer, ActorId>(new ABHandler(), AbBuffer, ABId)
+                Tuple.Create(new ActorDescriptor(new NopHandler()), NopBuffer, NoopId),
+                Tuple.Create(new ActorDescriptor(new AHandler()), ABuffer, AId),
+                Tuple.Create(new ActorDescriptor(new ABHandler()), AbBuffer, ABId)
             });
         }
     }
