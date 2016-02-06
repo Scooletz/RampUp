@@ -65,10 +65,14 @@
     <Compile Include="Actors\Impl\CompositeActorTests.cs" />
     <Compile Include="Actors\Impl\MessageReaderTests.cs" />
     <Compile Include="Actors\Impl\MessageWriterTests.cs" />
+    <Compile Include="Actors\Impl\SegmentChainMessageStoreTests.cs" />
     <Compile Include="Actors\Impl\StructSizeCounterTests.cs" />
     <Compile Include="Actors\Impl\ActorRegistryTestsBase.cs" />
+    <Compile Include="Actors\OneSegmentOnlyPool.cs" />
+    <Compile Include="Actors\Timer\SchedulerTests.cs" />
     <Compile Include="Buffers\IndexCalculatorTests.cs" />
     <Compile Include="Buffers\StreamTests.cs" />
+    <Compile Include="Actors\GuidMessageReaderWriter.cs" />
     <Compile Include="PerformanceTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Ring\ManyToOneBufferTests.cs" />
@@ -81,7 +85,9 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config" />
+    <None Include="packages.config">
+      <SubType>Designer</SubType>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Content Include="FodyWeavers.xml" />

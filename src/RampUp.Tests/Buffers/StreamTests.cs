@@ -13,7 +13,7 @@ namespace RampUp.Tests.Buffers
 
         public StreamTests()
         {
-            _pool = new SingleThreadSegmentPool(1024, 4096);
+            _pool = new SingleThreadSegmentPool(1024);
         }
 
         [SetUp]

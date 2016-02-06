@@ -4,31 +4,20 @@ namespace RampUp.Buffers
 {
     public sealed unsafe class SingleThreadSegmentPool : ISegmentPool
     {
-        private const int MinimalSegmentCount = 1024;
-        private const int MinimalSegmentSize = 4096;
+        public const int MinimalSegmentCount = 1024;
+        public const int SegmentSize = 4096;
         private readonly UnsafeBuffer _buffer;
         private Segment* _head;
 
-        public SingleThreadSegmentPool(int segmentCount, int segmentLength)
+        public SingleThreadSegmentPool(int segmentCount)
         {
-            SegmentLength = segmentLength;
-            if (segmentLength.IsPowerOfTwo() == false)
-            {
-                throw new ArgumentException("Segment size must be power of 2", nameof(segmentLength));
-            }
-
-            if (segmentLength < 4096)
-            {
-                throw new ArgumentException($"Segment length should be at least {MinimalSegmentSize}", nameof(segmentLength));
-            }
-
             if (segmentCount < 1024)
             {
                 throw new ArgumentException($"SegmentCount must be at least {MinimalSegmentCount}", nameof(segmentCount));
             }
 
             var segmentStructureOverhead = segmentCount * Segment.Size;
-            var segmentData = segmentCount * segmentLength;
+            var segmentData = segmentCount * SegmentSize;
 
             _buffer = new UnsafeBuffer(segmentData + segmentStructureOverhead);
 
@@ -38,8 +27,8 @@ namespace RampUp.Buffers
             for (var i = 0; i < segmentCount; i++)
             {
                 var s = segments + i;
-                var buffer = data + i * segmentLength;
-                var segment = new Segment(buffer, segmentLength);
+                var buffer = data + i * SegmentSize;
+                var segment = new Segment(buffer, SegmentSize);
 
                 // copy to the memory pointed by s
                 Native.MemcpyUnmanaged((byte*) s, (byte*) &segment, Segment.Size);
@@ -48,7 +37,7 @@ namespace RampUp.Buffers
             }
         }
 
-        public int SegmentLength { get; }
+        public int SegmentLength => SegmentSize;
 
         public bool TryPop(out Segment* result)
         {
