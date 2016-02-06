@@ -51,7 +51,7 @@ namespace RampUp.Actors.Impl
         private void Write<TMessage>(ref TMessage msg, Envelope envelope, IRingBuffer buffer)
             where TMessage : struct
         {
-            var successful = _writer.Write(ref envelope, ref msg, buffer);
+            var successful = _writer.Write(ref envelope, ref msg, buffer.Write);
             if (successful == false)
             {
                 var wait = new SpinWait();
@@ -64,7 +64,7 @@ namespace RampUp.Actors.Impl
                     }
                     counter += 1;
                     wait.SpinOnce();
-                    successful = _writer.Write(ref envelope, ref msg, buffer);
+                    successful = _writer.Write(ref envelope, ref msg, buffer.Write);
                 } while (successful == false);
             }
         }

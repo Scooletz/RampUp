@@ -70,7 +70,7 @@ namespace RampUp.Actors.Impl
             il.EmitCall(OpCodes.Callvirt, typeof(Dictionary<Type, MessageMetadata>).GetProperty("Item").GetGetMethod(true), null);
             il.Emit(OpCodes.Stloc_0);
 
-            // buffer first
+            // writer first
             il.Emit(OpCodes.Ldarg_3);
 
             // message id
@@ -88,8 +88,8 @@ namespace RampUp.Actors.Impl
             il.Emit(OpCodes.Ldfld, typeof(MessageMetadata).GetField("Size"));
             il.Emit(OpCodes.Newobj, byteChunkCtor);
 
-            //// call write
-            var writeMethod = typeof(IRingBuffer).GetMethod("Write");
+            //// call writer
+            var writeMethod = typeof(WriteDelegate).GetMethod("Invoke");
             il.EmitCall(OpCodes.Callvirt, writeMethod, null);
             il.Emit(OpCodes.Ret);
         }
@@ -97,7 +97,7 @@ namespace RampUp.Actors.Impl
 
     internal sealed class SomeWriter : BaseMessageWriter, IMessageWriter
     {
-        public bool Write<TMessage>(ref Envelope envelope, ref TMessage message, IRingBuffer buffer)
+        public bool Write<TMessage>(ref Envelope envelope, ref TMessage message, WriteDelegate write)
             where TMessage : struct
         {
             throw new NotImplementedException();

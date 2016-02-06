@@ -39,7 +39,7 @@ namespace RampUp.Tests.Actors.Impl
             var e = new Envelope(new ActorId(1));
             var a = new A();
 
-            Assert.True(writer.Write(ref e, ref a, buffer));
+            Assert.True(writer.Write(ref e, ref a, buffer.Write));
 
             var call = buffer.ReceivedCalls().Single();
             var args = call.GetArguments();
