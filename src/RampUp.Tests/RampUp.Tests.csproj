@@ -70,6 +70,7 @@
     <Compile Include="Actors\Impl\IntLookupTests.cs" />
     <Compile Include="Actors\Impl\MessageReaderTests.cs" />
     <Compile Include="Actors\Impl\MessageWriterTests.cs" />
+    <Compile Include="Actors\Impl\RunnerTests.cs" />
     <Compile Include="Actors\Impl\SegmentChainMessageStoreTests.cs" />
     <Compile Include="Actors\Impl\StructSizeCounterTests.cs" />
     <Compile Include="Actors\Impl\ActorRegistryTestsBase.cs" />
