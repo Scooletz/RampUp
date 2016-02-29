@@ -12,5 +12,5 @@ namespace RampUp.Actors.Impl
             where TMessage : struct;
     }
 
-    public delegate bool WriteDelegate(int messageTypeId, ByteChunk chunk, ByteChunk chunk2);
+    public delegate bool WriteDelegate(int messageTypeId, ByteChunk chunk);
 }

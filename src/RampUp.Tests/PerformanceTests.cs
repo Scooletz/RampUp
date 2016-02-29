@@ -16,7 +16,7 @@ namespace RampUp.Tests
     [Explicit]
     public class PerformanceTests
     {
-        public struct A
+        public struct A : IMessage
         {
             public int Value;
         }

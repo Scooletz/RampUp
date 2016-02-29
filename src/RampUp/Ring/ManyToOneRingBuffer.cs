@@ -36,15 +36,14 @@ namespace RampUp.Ring
         public int Capacity { get; }
         public int MaximumMessageLength { get; }
 
-        public bool Write(int messageTypeId, ByteChunk chunk, ByteChunk chunk2 = default (ByteChunk))
+        public bool Write(int messageTypeId, ByteChunk chunk)
         {
             ValidateMessageTypeId(messageTypeId);
             ValidateLength(chunk);
-            ValidateAlignments(chunk, chunk2);
 
             var isSuccessful = false;
 
-            var recordLength = chunk.Length + chunk2.Length + HeaderLength;
+            var recordLength = chunk.Length + HeaderLength;
             var requiredCapacity = recordLength.AlignToMultipleOf(RecordAlignment);
             var recordIndex = ClaimCapacity(requiredCapacity);
 
@@ -54,28 +53,12 @@ namespace RampUp.Ring
                 index.VolatileWrite(MakeHeader(-recordLength, messageTypeId));
                 var offset = EncodedMsgOffset(recordIndex);
                 _buffer.Write(offset, chunk);
-                if (chunk2.Length > 0)
-                {
-                    _buffer.Write(offset + chunk.Length, chunk2);
-                }
                 _buffer.GetAtomicInt(recordIndex).VolatileWrite(recordLength);
 
                 isSuccessful = true;
             }
 
             return isSuccessful;
-        }
-
-        private void ValidateAlignments(ByteChunk chunk, ByteChunk chunk2)
-        {
-            if (chunk2.Length > 0)
-            {
-                var chunkLengthAligned = chunk.Length.AlignToMultipleOf(RecordAlignment);
-                if (chunkLengthAligned != chunk.Length)
-                {
-                    throw new ArgumentException($"Writing two chunks requires first to be alinged to {RecordAlignment} boundary");
-                }
-            }
         }
 
         public int Read(MessageHandler handler, int messageProcessingLimit)

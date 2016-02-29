@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.InteropServices;
 using RampUp.Buffers;
-using RampUp.Ring;
 
 namespace RampUp.Actors.Impl
 {
@@ -16,17 +16,19 @@ namespace RampUp.Actors.Impl
         {
             public readonly int Id;
             public readonly int Size;
+            public readonly int EnvelopeOffset;
 
-            public MessageMetadata(int id, int size)
+            public MessageMetadata(int id, int size, int envelopeOffset)
             {
                 Id = id;
                 Size = size;
+                EnvelopeOffset = envelopeOffset;
             }
         }
 
         protected void Init(IStructSizeCounter counter, Func<Type, int> messageIdGetter, Type[] structTypes)
         {
-            Meta = structTypes.ToDictionary(type => type, type => new MessageMetadata(messageIdGetter(type), counter.GetSize(type)));
+            Meta = structTypes.ToDictionary(type => type, type => new MessageMetadata(messageIdGetter(type), counter.GetSize(type), (int)Marshal.OffsetOf(type, Envelope.FieldName)));
         }
 
         public static IMessageWriter Build(IStructSizeCounter counter, Func<Type, int> messageIdGetter,
@@ -46,7 +48,7 @@ namespace RampUp.Actors.Impl
             var genericParameters = method.DefineGenericParameters("TMessage");
             genericParameters[0].SetGenericParameterAttributes(GenericParameterAttributes.None);
 
-            EmitBody(method, counter.GetSize(typeof(Envelope)));
+            EmitBody(method);
 
             // initialize
             var instance = Activator.CreateInstance(writer.CreateType());
@@ -54,7 +56,7 @@ namespace RampUp.Actors.Impl
             return (IMessageWriter)instance;
         }
 
-        private static void EmitBody(MethodBuilder method, int envelopeSize)
+        private static void EmitBody(MethodBuilder method)
         {
             var byteChunkCtor = typeof(ByteChunk).GetConstructors().Single(ci => ci.GetParameters().Length == 2);
 
@@ -77,12 +79,19 @@ namespace RampUp.Actors.Impl
             il.Emit(OpCodes.Ldloc_0);
             il.Emit(OpCodes.Ldfld, typeof(MessageMetadata).GetField("Id"));
 
-            //// envelope ByteChunk
-            il.Emit(OpCodes.Ldarg_1); // YES, you can load the managed reference and pass it as a pointer :D
-            il.Emit(OpCodes.Ldc_I4, envelopeSize);
-            il.Emit(OpCodes.Newobj, byteChunkCtor);
+            // store envelope in the field of a message
+            il.Emit(OpCodes.Ldarg_2); // YES, you can load the managed reference and pass it as a pointer :D
+            il.Emit(OpCodes.Ldloc_0);
+            il.Emit(OpCodes.Ldfld, typeof(MessageMetadata).GetField("EnvelopeOffset"));
+            il.Emit(OpCodes.Add);
+            il.Emit(OpCodes.Pop);
 
-            //// message ByteChunk
+            // TODO: store the envelope in the struct
+            //il.Emit(OpCodes.Ldarg_1);   // stack: field address, ref envelope
+            //il.Emit(OpCodes.Ldobj);     // stack: field address, envelope
+            //il.Emit(OpCodes.Stobj);     // stack: -
+
+            // message ByteChunk
             il.Emit(OpCodes.Ldarg_2); // YES, you can load the managed reference and pass it as a pointer :D
             il.Emit(OpCodes.Ldloc_0);
             il.Emit(OpCodes.Ldfld, typeof(MessageMetadata).GetField("Size"));

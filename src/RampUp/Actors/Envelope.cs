@@ -9,6 +9,8 @@ namespace RampUp.Actors
     [StructLayout(LayoutKind.Explicit, Size = RingBufferDescriptor.RecordAlignment)]
     public struct Envelope
     {
+        internal static readonly string FieldName = "_____envelope";
+
         /// <summary>
         /// The sender.
         /// </summary>

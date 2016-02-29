@@ -27,11 +27,11 @@ namespace RampUp.Tests.Actors.Impl
             reader.MessageHandlerImpl(4, new ByteChunk(bytes, 5));
         }
 
-        public struct A
+        public struct A : IMessage
         {
         }
 
-        public struct B
+        public struct B : IMessage
         {
         }
 

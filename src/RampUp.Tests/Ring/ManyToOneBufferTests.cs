@@ -312,16 +312,6 @@ namespace RampUp.Tests.Ring
         }
 
         [Test]
-        public void ShouldThrowWhenTwoChunksWrittenAndFirstIsMisallingned()
-        {
-            Assert.Throws<ArgumentException>(()=>
-            {
-                _ringBuffer.Write(MessageTypeId, new ByteChunk(null, RecordAlignment + 1),
-                    new ByteChunk(null, RecordAlignment));
-            });
-        }
-
-        [Test]
         public void ShouldInsertPaddingAndWriteToBuffer()
         {
             const int padding = 200;

@@ -9,7 +9,7 @@ namespace RampUp.Ring
     {
         int Capacity { get; }
         int MaximumMessageLength { get; }
-        bool Write(int messageTypeId, ByteChunk chunk, ByteChunk chunk2 = default (ByteChunk));
+        bool Write(int messageTypeId, ByteChunk chunk);
         int Read(MessageHandler handler, int messageProcessingLimit);
     }
 }

@@ -31,7 +31,7 @@ namespace RampUp.Tests.Actors.Impl
             }
         }
 
-        public struct A
+        public struct A : IMessage
         {
         }
 
@@ -51,7 +51,7 @@ namespace RampUp.Tests.Actors.Impl
             }
         }
 
-        public struct B
+        public struct B : IMessage
         {
         }
 
