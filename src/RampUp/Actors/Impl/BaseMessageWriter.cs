@@ -84,12 +84,11 @@ namespace RampUp.Actors.Impl
             il.Emit(OpCodes.Ldloc_0);
             il.Emit(OpCodes.Ldfld, typeof(MessageMetadata).GetField("EnvelopeOffset"));
             il.Emit(OpCodes.Add);
-            il.Emit(OpCodes.Pop);
 
-            // TODO: store the envelope in the struct
-            //il.Emit(OpCodes.Ldarg_1);   // stack: field address, ref envelope
-            //il.Emit(OpCodes.Ldobj);     // stack: field address, envelope
-            //il.Emit(OpCodes.Stobj);     // stack: -
+            il.Emit(OpCodes.Ldarg_1);   
+            il.Emit(OpCodes.Ldind_I8);  
+            
+            il.Emit(OpCodes.Stind_I8);
 
             // message ByteChunk
             il.Emit(OpCodes.Ldarg_2); // YES, you can load the managed reference and pass it as a pointer :D
