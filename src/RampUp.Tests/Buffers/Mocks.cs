@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace RampUp.Atomics
+namespace RampUp.Tests.Buffers
 {
     public static class Mocks
     {

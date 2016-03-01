@@ -1,10 +1,12 @@
 ﻿using System;
+using CodeCop.Core;
+using CodeCop.Core.Fluent;
 using NSubstitute;
 using NUnit.Framework;
 using RampUp.Atomics;
 using RampUp.Buffers;
 using RampUp.Ring;
-
+using RampUp.Tests.Buffers;
 using static RampUp.Ring.RingBufferDescriptor;
 
 namespace RampUp.Tests.Ring
@@ -27,14 +29,75 @@ namespace RampUp.Tests.Ring
         private Mocks.IAtomicLong _atomicLong;
         private Mocks.IAtomicInt _atomicInt;
 
+        public ManyToOneBufferTests()
+        {
+            Cop.AsFluent();
+
+            // long
+            var l = typeof (AtomicLong);
+            l.GetMethod("Read").Override(c => Mocks.AtomicLong.Read(GetAtomicLongPtr(c)));
+            l.GetMethod("Write").Override(c =>
+            {
+                Mocks.AtomicLong.Write(GetAtomicLongPtr(c), (long) c.Parameters[1].Value);
+                return null;
+            });
+            l.GetMethod("VolatileRead").Override(c => Mocks.AtomicLong.VolatileRead(GetAtomicLongPtr(c)));
+            l.GetMethod("VolatileWrite").Override(c =>
+            {
+                Mocks.AtomicLong.VolatileWrite(GetAtomicLongPtr(c), (long) c.Parameters[0].Value);
+                return null;
+            });
+            l.GetMethod("CompareExchange")
+                .Override(
+                    c =>
+                        Mocks.AtomicLong.CompareExchange(GetAtomicLongPtr(c), (long) c.Parameters[0].Value,
+                            (long) c.Parameters[1].Value));
+
+            // int
+            var i = typeof (AtomicInt);
+            i.GetMethod("Read").Override(c => Mocks.AtomicInt.Read(GetAtomicIntPtr(c)));
+            i.GetMethod("Write").Override(c =>
+            {
+                Mocks.AtomicInt.Write(GetAtomicIntPtr(c), (int) c.Parameters[1].Value);
+                return null;
+            });
+            i.GetMethod("VolatileRead").Override(c => Mocks.AtomicInt.VolatileRead(GetAtomicIntPtr(c)));
+            i.GetMethod("VolatileWrite").Override(c =>
+            {
+                Mocks.AtomicInt.VolatileWrite(GetAtomicIntPtr(c), (int) c.Parameters[0].Value);
+                return null;
+            });
+            i.GetMethod("CompareExchange")
+                .Override(
+                    c =>
+                        Mocks.AtomicInt.CompareExchange(GetAtomicIntPtr(c), (int) c.Parameters[0].Value,
+                            (int) c.Parameters[1].Value));
+
+            Cop.Intercept();
+        }
+
+        private static IntPtr GetAtomicLongPtr(InterceptionContext c)
+        {
+            var atomicLong = (AtomicLong) c.Sender;
+            var ptr = (IntPtr) (**(long**) &atomicLong);
+            return ptr;
+        }
+
+        private static IntPtr GetAtomicIntPtr(InterceptionContext c)
+        {
+            var atomicLong = (AtomicInt) c.Sender;
+            var ptr = (IntPtr) (**(int**) &atomicLong);
+            return ptr;
+        }
+
         [SetUp]
         public void SetUp()
         {
             _buffer = Substitute.For<IUnsafeBuffer>();
             _buffer.Size.Returns(TotalBufferLength);
 
-            _buffer.GetAtomicLong(Arg.Any<long>()).Returns(ci => new AtomicLong((byte*)ci.Arg<long>()));
-            _buffer.GetAtomicInt(Arg.Any<long>()).Returns(ci => new AtomicInt((byte*)ci.Arg<long>()));
+            _buffer.GetAtomicLong(Arg.Any<long>()).Returns(ci => new AtomicLong((byte*) ci.Arg<long>()));
+            _buffer.GetAtomicInt(Arg.Any<long>()).Returns(ci => new AtomicInt((byte*) ci.Arg<long>()));
 
             _atomicLong = Substitute.For<Mocks.IAtomicLong>();
             Mocks.AtomicLong = _atomicLong;
@@ -56,7 +119,8 @@ namespace RampUp.Tests.Ring
             const int tailValue = 0;
             _atomicLong.VolatileRead(Arg.Is(Tail)).Returns(tailValue);
 
-            _atomicLong.CompareExchange(Arg.Is(Tail), Arg.Is(tailValue), Arg.Is(tailValue + alignedRecordLength)).Returns(tailValue);
+            _atomicLong.CompareExchange(Arg.Is(Tail), Arg.Is(tailValue), Arg.Is(tailValue + alignedRecordLength))
+                .Returns(tailValue);
 
             var block = stackalloc byte[100];
 
@@ -116,7 +180,7 @@ namespace RampUp.Tests.Ring
             var recordLength = length + HeaderLength;
             var alignedRecordLength = recordLength.AlignToMultipleOf(RecordAlignment);
             long tail = Capacity - HeaderLength;
-            var head = tail - RecordAlignment * 4;
+            var head = tail - RecordAlignment*4;
 
             _atomicLong.VolatileRead(Head).Returns(head);
             _atomicLong.VolatileRead(Tail).Returns(tail);
@@ -182,7 +246,7 @@ namespace RampUp.Tests.Ring
         public void ShouldNotReadSingleMessagePartWayThroughWriting()
         {
             const long head = 0L;
-            const int headIndex = (int)head;
+            const int headIndex = (int) head;
 
             _atomicLong.Read(Head).Returns(head);
             _atomicInt.VolatileRead(new IntPtr(headIndex)).Returns(0);
@@ -205,9 +269,9 @@ namespace RampUp.Tests.Ring
             const int msgLength = 16;
             var recordLength = HeaderLength + msgLength;
             var alignedRecordLength = recordLength.AlignToMultipleOf(RecordAlignment);
-            long tail = alignedRecordLength * 2;
+            long tail = alignedRecordLength*2;
             const long head = 0L;
-            const int headIndex = (int)head;
+            const int headIndex = (int) head;
 
             _atomicLong.Read(Head).Returns(head);
             var makeHeader = MakeHeader(recordLength, MessageTypeId);
@@ -223,7 +287,7 @@ namespace RampUp.Tests.Ring
 
             Received.InOrder(() =>
             {
-                _buffer.Received(1).ZeroMemory(headIndex, alignedRecordLength * 2);
+                _buffer.Received(1).ZeroMemory(headIndex, alignedRecordLength*2);
                 _atomicLong.VolatileWrite(Head, tail);
             });
         }
@@ -235,7 +299,7 @@ namespace RampUp.Tests.Ring
             var recordLength = HeaderLength + msgLength;
             var alignedRecordLength = recordLength.AlignToMultipleOf(RecordAlignment);
             const long head = 0L;
-            const int headIndex = (int)head;
+            const int headIndex = (int) head;
 
             _atomicLong.Read(Head).Returns(head);
             _atomicLong.VolatileRead(new IntPtr(headIndex)).Returns(MakeHeader(recordLength, MessageTypeId));
@@ -260,13 +324,14 @@ namespace RampUp.Tests.Ring
             const int msgLength = 16;
             var recordLength = HeaderLength + msgLength;
             var alignedRecordLength = recordLength.AlignToMultipleOf(RecordAlignment);
-            var tail = alignedRecordLength * 2;
+            var tail = alignedRecordLength*2;
             const long head = 0L;
-            const int headIndex = (int)head;
+            const int headIndex = (int) head;
 
             _atomicLong.Read(Head).Returns(head);
             _atomicLong.VolatileRead(new IntPtr(headIndex)).Returns(MakeHeader(recordLength, MessageTypeId));
-            _atomicLong.VolatileRead(new IntPtr(headIndex + alignedRecordLength)).Returns(MakeHeader(recordLength, MessageTypeId));
+            _atomicLong.VolatileRead(new IntPtr(headIndex + alignedRecordLength))
+                .Returns(MakeHeader(recordLength, MessageTypeId));
 
             var counter = 0;
             MessageHandler h = (id, chunk) =>
@@ -288,7 +353,7 @@ namespace RampUp.Tests.Ring
 
                 Received.InOrder(() =>
                 {
-                    _buffer.Received(1).ZeroMemory(Arg.Is(headIndex), Arg.Is(alignedRecordLength * 2));
+                    _buffer.Received(1).ZeroMemory(Arg.Is(headIndex), Arg.Is(alignedRecordLength*2));
                     _atomicLong.Received(1).VolatileWrite(Head, tail);
                 });
                 return;
@@ -308,7 +373,8 @@ namespace RampUp.Tests.Ring
         [Test]
         public void ShouldThrowExceptionWhenMaxMessageSizeExceeded()
         {
-            Assert.Throws<ArgumentException>(() => { _ringBuffer.Write(MessageTypeId, new ByteChunk(null, _ringBuffer.MaximumMessageLength + 1)); });
+            Assert.Throws<ArgumentException>(
+                () => { _ringBuffer.Write(MessageTypeId, new ByteChunk(null, _ringBuffer.MaximumMessageLength + 1)); });
         }
 
         [Test]
@@ -319,7 +385,7 @@ namespace RampUp.Tests.Ring
             var recordLength = messageLength + HeaderLength;
             var alignedRecordLength = recordLength.AlignToMultipleOf(RecordAlignment);
 
-            const long tail = 2 * Capacity - padding;
+            const long tail = 2*Capacity - padding;
             const long head = tail;
 
             // free space is (200 + 300) more than message length (400) but contiguous space (300) is less than message length (400)

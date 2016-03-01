@@ -45,6 +45,10 @@
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="CodeCop, Version=3.2.1.0, Culture=neutral, PublicKeyToken=401d1f9f00971572, processorArchitecture=MSIL">
+      <HintPath>..\packages\CodeCop.3.2.1\lib\net46\CodeCop.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="NSubstitute, Version=1.9.2.0, Culture=neutral, PublicKeyToken=92dd2e9066daa5ca, processorArchitecture=MSIL">
       <HintPath>..\packages\NSubstitute.1.9.2.0\lib\net45\NSubstitute.dll</HintPath>
       <Private>True</Private>
@@ -71,6 +75,7 @@
     <Compile Include="Actors\OneSegmentOnlyPool.cs" />
     <Compile Include="Actors\Timer\TimerWheelTests.cs" />
     <Compile Include="Buffers\IndexCalculatorTests.cs" />
+    <Compile Include="Buffers\Mocks.cs" />
     <Compile Include="Buffers\StreamTests.cs" />
     <Compile Include="Actors\GuidMessageReaderWriter.cs" />
     <Compile Include="PerformanceTests.cs" />
