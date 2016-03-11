@@ -14,7 +14,7 @@ RampUp aims at providing foundations for systems like databases, queues, web ser
 There are many great projects out there that are an inspiration for RampUp:
 - [EventStore](https://github.com/EventStore/EventStore) - an event database; it uses SEDA approach and an in-memory messaging
 - [Akka.NET](https://github.com/akkadotnet/akka.net) - a very active actor's framework for .NET
-- [Aeron](https://github.com/real-logic/Aeron) - an extremely performant messaging system using UDP + negative acknowledgements; brought to live by Martin Thomson, the Java mechanical sympathy guru
+- [Aeron](https://github.com/real-logic/Aeron) - an extremely performant messaging system using UDP + negative acknowledgements; brought to life by Martin Thomson, the Java mechanical sympathy guru
 
 ## Icon
 <a href="https://thenounproject.com/term/graph/32972/" target="_blank">Graph</a> designed by <a href="https://thenounproject.com/phdieuli/" target="_blank">Pham Thi Dieu Linh</a> from The Noun Project
