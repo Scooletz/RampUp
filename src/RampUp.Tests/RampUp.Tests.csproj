@@ -69,7 +69,7 @@
     <Compile Include="Actors\Impl\StructSizeCounterTests.cs" />
     <Compile Include="Actors\Impl\ActorRegistryTestsBase.cs" />
     <Compile Include="Actors\OneSegmentOnlyPool.cs" />
-    <Compile Include="Actors\Timer\SchedulerTests.cs" />
+    <Compile Include="Actors\Timer\TimerWheelTests.cs" />
     <Compile Include="Buffers\IndexCalculatorTests.cs" />
     <Compile Include="Buffers\StreamTests.cs" />
     <Compile Include="Actors\GuidMessageReaderWriter.cs" />

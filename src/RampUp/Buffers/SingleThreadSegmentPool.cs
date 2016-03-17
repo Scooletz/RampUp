@@ -16,18 +16,18 @@ namespace RampUp.Buffers
                 throw new ArgumentException($"SegmentCount must be at least {MinimalSegmentCount}", nameof(segmentCount));
             }
 
-            var segmentStructureOverhead = segmentCount * Segment.Size;
-            var segmentData = segmentCount * SegmentSize;
+            var segmentStructureOverhead = segmentCount*Segment.Size;
+            var segmentData = segmentCount*SegmentSize;
 
             _buffer = new UnsafeBuffer(segmentData + segmentStructureOverhead);
 
-            var segments = (Segment*)_buffer.RawBytes;
+            var segments = (Segment*) _buffer.RawBytes;
             var data = _buffer.RawBytes + segmentStructureOverhead;
 
             for (var i = 0; i < segmentCount; i++)
             {
                 var s = segments + i;
-                var buffer = data + i * SegmentSize;
+                var buffer = data + i*SegmentSize;
                 var segment = new Segment(buffer, SegmentSize);
 
                 // copy to the memory pointed by s
@@ -79,7 +79,8 @@ namespace RampUp.Buffers
         {
             if (segment->Length != SegmentLength)
             {
-                throw new ArgumentException("The segment length is different from the segment sizes of this pool. Are you trying to push a segment from another pool maybe?");
+                throw new ArgumentException(
+                    "The segment length is different from the segment sizes of this pool. Are you trying to push a segment from another pool maybe?");
             }
 
             var tail = segment->Tail;
@@ -91,7 +92,19 @@ namespace RampUp.Buffers
             {
                 tail->Next = _head;
             }
-            _head = segment; 
+            _head = segment;
+        }
+
+        public int CountSegments()
+        {
+            var counter = 0;
+            var current = _head;
+            while (current != null)
+            {
+                current = current->Next;
+                counter += 1;
+            }
+            return counter;
         }
 
         public void Dispose()

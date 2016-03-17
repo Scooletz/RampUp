@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using RampUp.Actors.Impl;
 using RampUp.Buffers;
 using RampUp.Ring;
@@ -18,7 +17,7 @@ namespace RampUp.Actors.Time.Impl
         private const int SizeOfSegment = 8 /*sizeof(Segment*)*/;
         private const int TimeoutsPerSegment = SingleThreadSegmentPool.SegmentSize/SizeOfSegment;
         private const int TimeoutsPerSegmentMask = TimeoutsPerSegment - 1;
-
+        public const int MaximumNumberOfIntervals = TimeoutsPerSegment - 1;
         private readonly Segment* _segment;
         private readonly ISegmentPool _pool;
         private readonly MessageHandler _handler;
@@ -112,6 +111,14 @@ namespace RampUp.Actors.Time.Impl
 
         public void Dispose()
         {
+            for (var i = 0; i < TimeoutsPerSegment; i++)
+            {
+                if (_wheel[i] != null)
+                {
+                    _pool.Push(_wheel[i]);
+                }
+            }
+
             _pool.Push(_segment);
         }
     }
