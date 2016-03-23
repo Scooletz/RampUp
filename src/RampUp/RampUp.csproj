@@ -67,6 +67,7 @@
     <Compile Include="Actors\Impl\MessageReader.cs" />
     <Compile Include="Actors\Impl\SegmentChainMessageStore.cs" />
     <Compile Include="Actors\Impl\StructSizeCounter.cs" />
+    <Compile Include="Actors\Impl\IntLookup.cs" />
     <Compile Include="Actors\Time\IScheduler.cs" />
     <Compile Include="Actors\Time\Impl\TimerWheel.cs" />
     <Compile Include="Atomics\AtomicInt.cs" />
@@ -97,6 +98,7 @@
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="..\packages\Fody.1.29.4\build\dotnet\Fody.targets" Condition="Exists('..\packages\Fody.1.29.4\build\dotnet\Fody.targets')" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
