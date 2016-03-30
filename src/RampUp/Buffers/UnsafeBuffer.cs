@@ -1,4 +1,6 @@
 ﻿using System;
+using System.ComponentModel;
+using System.Runtime.InteropServices;
 using RampUp.Atomics;
 
 namespace RampUp.Buffers
@@ -14,12 +16,12 @@ namespace RampUp.Buffers
         public UnsafeBuffer(int size)
         {
             Size = size;
-            _size = (UIntPtr)size.AlignToMultipleOf((int)Native.Info.AllocationGranularity);
+            _size = (UIntPtr) size.AlignToMultipleOf((int) Native.Info.AllocationGranularity);
 
             _allocated = Native.VirtualAlloc(UIntPtr.Zero, _size,
-              Native.AllocationType.Commit | Native.AllocationType.Reserve,
-              Native.MemoryProtection.ReadWrite);
-            RawBytes = (byte*)_allocated;
+                Native.AllocationType.Commit | Native.AllocationType.Reserve,
+                Native.MemoryProtection.ReadWrite);
+            RawBytes = (byte*) _allocated;
         }
 
         public int Size { get; }
@@ -48,7 +50,21 @@ namespace RampUp.Buffers
                 GC.SuppressFinalize(this);
             }
 
-            Native.VirtualFree(_allocated, _size, Native.AllocationType.Decommit | Native.AllocationType.Release);
+            var success = Native.VirtualFree(_allocated, UIntPtr.Zero, Native.AllocationType.Release);
+
+            if (success == false)
+            {
+                var error = Marshal.GetLastWin32Error();
+                if (error != 0)
+                {
+                    throw new Win32Exception(error);
+                }
+            }
+        }
+
+        ~UnsafeBuffer()
+        {
+            Dispose(false);
         }
 
         public void Write(int offset, ByteChunk chunk)

@@ -18,7 +18,7 @@ namespace RampUp.Tests.Actors.Impl
                 int value;
                 if (intLookup.TryGet(kvp.Key, out value))
                 {
-                    Assert.AreEqual(kvp.Key, value);
+                    Assert.AreEqual(kvp.Value, value);
                 }
             }
         }
