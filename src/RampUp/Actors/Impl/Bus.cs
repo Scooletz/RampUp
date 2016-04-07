@@ -6,24 +6,39 @@ namespace RampUp.Actors.Impl
 {
     public sealed class Bus : IBus
     {
-        private readonly ActorId _owner;
-        private readonly ActorRegistry _registry;
-        private readonly int _throwAfterNTrials;
-        private readonly IMessageWriter _writer;
+        private ActorId _owner;
+        private ActorRegistry _registry;
+        private int _throwAfterNTrials;
+        private IMessageWriter _writer;
+        private bool _sealed;
 
         public Bus(ActorId owner, ActorRegistry registry, int throwAfterNTrials, IMessageWriter writer)
         {
+            Init(owner, registry, throwAfterNTrials, writer);
+        }
+
+        internal void Init(ActorId owner, ActorRegistry registry, int throwAfterNTrials, IMessageWriter writer)
+        {
+            if (_sealed)
+            {
+                throw new InvalidOperationException("The bus has been already initialized");
+            }
             _owner = owner;
             _registry = registry;
             _throwAfterNTrials = throwAfterNTrials;
             _writer = writer;
+            _sealed = true;
+        }
+
+        internal Bus()
+        {
         }
 
         public void Publish<TMessage>(ref TMessage msg)
             where TMessage : struct
         {
             var envelope = new Envelope(_owner);
-            var buffers = _registry.GetBuffers(typeof(TMessage));
+            var buffers = _registry.GetBuffers(typeof (TMessage));
             for (var i = 0; i < buffers.Length; i++)
             {
                 var buffer = buffers[i];

@@ -10,6 +10,60 @@ I'm aiming at ending this journey with a real OSS product for building highly de
 ## The aim
 RampUp aims at providing foundations for systems like databases, queues, web servers and other distributed systems. The foundations are based on knowledge about moder hardware and are meant to abstract these concerns properly. Hopefully, a faster version of a network IO will be provided as well, possibly using an approach similar to Aeron (Nack based publication) for local networks. Again, it's still a journey.
 
+
+## Example
+The example of the current high level API for creating in memory actors on one machine can be find below. I hope you'll like this ping pong peformed by Bruce & Lee.
+
+```
+public class Program
+{
+    public static void Main()
+    {
+        var system = new ActorSystem();
+        IBus bus = null;
+
+        system.Add(new Bruce(), ctx => { bus = ctx.Actor.Bus = ctx.Bus; });
+        system.Add(new Lee(), ctx => { ctx.Actor.Bus = ctx.Bus; });
+
+        system.Start();
+
+        var p = new Pong();
+        bus.Publish(ref p); // pong as Bruce
+
+        // ... later
+
+        system.Stop();
+    }
+}
+
+public class Bruce : IHandle<Ping>
+{
+    public IBus Bus;
+
+    public void Handle(ref Envelope envelope, ref Ping msg)
+    {
+        var p = new Pong();
+        Bus.Publish(ref p);
+    }
+}
+
+public class Lee : IHandle<Pong>
+{
+    public IBus Bus;
+
+    public void Handle(ref Envelope envelope, ref Pong msg)
+    {
+        var p = new Ping();
+        Bus.Publish(ref p);
+    }
+}
+
+public struct Pong : IMessage {}
+
+public struct Ping : IMessage {}
+```
+
+
 ## The inspiration corner
 There are many great projects out there that are an inspiration for RampUp:
 - [EventStore](https://github.com/EventStore/EventStore) - an event database; it uses SEDA approach and an in-memory messaging

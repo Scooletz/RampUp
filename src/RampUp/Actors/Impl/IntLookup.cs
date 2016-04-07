@@ -47,6 +47,7 @@ namespace RampUp.Actors.Impl
                 {
                     _keys[index] = key;
                     _values[index] = value;
+                    return;
                 }
             }
         }

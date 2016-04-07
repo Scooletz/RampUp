@@ -8,7 +8,7 @@ namespace RampUp.Actors.Impl
     /// <summary>
     /// A simple implementation of composite actor, providing a common <see cref="MessageHandler"/> method for all composed actors
     /// </summary>
-    public sealed class CompositeActor : IActor
+    public sealed class CompositeActor : IActor, IBatchAware
     {
         public readonly ActorDescriptor Descriptor;
         public const int MaxActors = sizeof (int);
@@ -17,6 +17,7 @@ namespace RampUp.Actors.Impl
         private readonly MessageReader[] _readers;
         private readonly int _count;
         private readonly int[] _messageMap;
+        private readonly IBatchAware[] _batchAware;
 
         public CompositeActor(IActor[] actors, IStructSizeCounter counter, Func<Type, int> messageIdGetter)
         {
@@ -35,6 +36,7 @@ namespace RampUp.Actors.Impl
             _count = _readers.Length;
 
             _messageMap = BuildMessageMap(actors, messageIdGetter);
+            _batchAware = actors.OfType<IBatchAware>().ToArray();
         }
 
         public void MessageHandler(int messageTypeId, ByteChunk chunk)
@@ -85,6 +87,15 @@ namespace RampUp.Actors.Impl
         {
             // simplest hash, as the message ids are generated with ++ probably, this should have low collisions in majority of cases
             return id & MessageMapMask;
+        }
+
+        public void OnBatchEnded(ref BatchInfo info)
+        {
+            // ReSharper disable once ForCanBeConvertedToForeach
+            for (var i = 0; i < _batchAware.Length; i++)
+            {
+                _batchAware[i].OnBatchEnded(ref info);
+            }
         }
     }
 }

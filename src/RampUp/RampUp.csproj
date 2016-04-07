@@ -53,8 +53,12 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Actors\ActorId.cs" />
+    <Compile Include="Actors\ActorSystem.cs" />
+    <Compile Include="Actors\BatchInfo.cs" />
     <Compile Include="Actors\Envelope.cs" />
+    <Compile Include="Actors\IBatchAware.cs" />
     <Compile Include="Actors\IBus.cs" />
+    <Compile Include="Actors\IFeature.cs" />
     <Compile Include="Actors\IHandle.cs" />
     <Compile Include="Actors\IMessage.cs" />
     <Compile Include="Actors\Impl\ActorDescriptor.cs" />
@@ -65,6 +69,7 @@
     <Compile Include="Actors\Impl\IMessageWriter.cs" />
     <Compile Include="Actors\Impl\IStructSizeCounter.cs" />
     <Compile Include="Actors\Impl\MessageReader.cs" />
+    <Compile Include="Actors\Impl\Runner.cs" />
     <Compile Include="Actors\Impl\SegmentChainMessageStore.cs" />
     <Compile Include="Actors\Impl\StructSizeCounter.cs" />
     <Compile Include="Actors\Impl\IntLookup.cs" />
