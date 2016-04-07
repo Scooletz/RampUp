@@ -7,18 +7,17 @@ using RampUp.Atomics;
 using RampUp.Buffers;
 using RampUp.Ring;
 using RampUp.Tests.Buffers;
-using static RampUp.Ring.RingBufferDescriptor;
 
-namespace RampUp.Tests.Ring
+namespace RampUp.Tests._Ring
 {
     public unsafe class ManyToOneBufferTests
     {
         private const int MessageTypeId = 7;
         private const int Capacity = 4096;
-        private static readonly int TotalBufferLength = Capacity + TrailerLength;
-        private static readonly int TailCounterIndex = Capacity + TailPositionOffset;
-        private static readonly int HeadCounterIndex = Capacity + HeadPositionOffset;
-        private static readonly int HeadCounterCacheIndex = Capacity + HeadCachePositionOffset;
+        private static readonly int TotalBufferLength = Capacity + RingBufferDescriptor.TrailerLength;
+        private static readonly int TailCounterIndex = Capacity + RingBufferDescriptor.TailPositionOffset;
+        private static readonly int HeadCounterIndex = Capacity + RingBufferDescriptor.HeadPositionOffset;
+        private static readonly int HeadCounterCacheIndex = Capacity + RingBufferDescriptor.HeadCachePositionOffset;
 
         private IUnsafeBuffer _buffer;
         private ManyToOneRingBuffer _ringBuffer;
@@ -111,7 +110,7 @@ namespace RampUp.Tests.Ring
         public void ShouldWriteToEmptyBuffer()
         {
             const int length = 8;
-            var recordLength = length + HeaderLength;
+            var recordLength = length + RingBufferDescriptor.HeaderLength;
             var alignedRecordLength = recordLength.AlignToMultipleOf(Native.CacheLineSize);
 
             const int headValue = 0;
@@ -129,8 +128,8 @@ namespace RampUp.Tests.Ring
 
             Received.InOrder(() =>
             {
-                _atomicLong.VolatileWrite(CurrentSlot, MakeHeader(-recordLength, MessageTypeId));
-                _buffer.Write(EncodedMsgOffset(tailValue), chunk);
+                _atomicLong.VolatileWrite(CurrentSlot, RingBufferDescriptor.MakeHeader(-recordLength, MessageTypeId));
+                _buffer.Write(RingBufferDescriptor.EncodedMsgOffset(tailValue), chunk);
                 _buffer.GetAtomicInt(tailValue);
                 _atomicInt.VolatileWrite(CurrentSlot, recordLength);
             });
@@ -141,7 +140,7 @@ namespace RampUp.Tests.Ring
         {
             const int length = 200;
             const long head = 0;
-            var tail = head + (Capacity - (length - RecordAlignment).AlignToMultipleOf(RecordAlignment));
+            var tail = head + (Capacity - (length - RingBufferDescriptor.RecordAlignment).AlignToMultipleOf(RingBufferDescriptor.RecordAlignment));
 
             _atomicLong.VolatileRead(Head).Returns(head);
             _atomicLong.VolatileRead(Tail).Returns(tail);
@@ -177,14 +176,14 @@ namespace RampUp.Tests.Ring
         public void ShouldInsertPaddingRecordPlusMessageOnBufferWrap()
         {
             const int length = 200;
-            var recordLength = length + HeaderLength;
-            var alignedRecordLength = recordLength.AlignToMultipleOf(RecordAlignment);
-            long tail = Capacity - HeaderLength;
-            var head = tail - RecordAlignment*4;
+            var recordLength = length + RingBufferDescriptor.HeaderLength;
+            var alignedRecordLength = recordLength.AlignToMultipleOf(RingBufferDescriptor.RecordAlignment);
+            long tail = Capacity - RingBufferDescriptor.HeaderLength;
+            var head = tail - RingBufferDescriptor.RecordAlignment*4;
 
             _atomicLong.VolatileRead(Head).Returns(head);
             _atomicLong.VolatileRead(Tail).Returns(tail);
-            _atomicLong.CompareExchange(Tail, tail + alignedRecordLength + RecordAlignment, tail).Returns(tail);
+            _atomicLong.CompareExchange(Tail, tail + alignedRecordLength + RingBufferDescriptor.RecordAlignment, tail).Returns(tail);
 
             var chunk = new ByteChunk(null, length);
             Assert.True(_ringBuffer.Write(MessageTypeId, chunk));
@@ -192,11 +191,11 @@ namespace RampUp.Tests.Ring
             Received.InOrder(() =>
             {
                 // padding first
-                _atomicLong.VolatileWrite(new IntPtr(tail), MakeHeader(HeaderLength, PaddingMsgTypeId));
+                _atomicLong.VolatileWrite(new IntPtr(tail), RingBufferDescriptor.MakeHeader(RingBufferDescriptor.HeaderLength, RingBufferDescriptor.PaddingMsgTypeId));
 
                 // then write from the start
-                _atomicLong.VolatileWrite(new IntPtr(0), MakeHeader(-recordLength, MessageTypeId));
-                _buffer.Write(EncodedMsgOffset(0), chunk);
+                _atomicLong.VolatileWrite(new IntPtr(0), RingBufferDescriptor.MakeHeader(-recordLength, MessageTypeId));
+                _buffer.Write(RingBufferDescriptor.EncodedMsgOffset(0), chunk);
                 _buffer.GetAtomicInt(0);
                 _atomicInt.VolatileWrite(new IntPtr(0), recordLength);
             });
@@ -206,14 +205,14 @@ namespace RampUp.Tests.Ring
         public void ShouldInsertPaddingRecordPlusMessageOnBufferWrapWithHeadEqualToTail()
         {
             const int length = 200;
-            var recordLength = length + HeaderLength;
-            var alignedRecordLength = recordLength.AlignToMultipleOf(RecordAlignment);
-            var tail = Capacity - HeaderLength;
+            var recordLength = length + RingBufferDescriptor.HeaderLength;
+            var alignedRecordLength = recordLength.AlignToMultipleOf(RingBufferDescriptor.RecordAlignment);
+            var tail = Capacity - RingBufferDescriptor.HeaderLength;
             var head = tail;
 
             _atomicLong.VolatileRead(Head).Returns(head);
             _atomicLong.VolatileRead(Tail).Returns(tail);
-            _atomicLong.CompareExchange(Tail, tail + alignedRecordLength + RecordAlignment, tail).Returns(tail);
+            _atomicLong.CompareExchange(Tail, tail + alignedRecordLength + RingBufferDescriptor.RecordAlignment, tail).Returns(tail);
 
             var chunk = new ByteChunk(null, length);
             Assert.IsTrue(_ringBuffer.Write(MessageTypeId, chunk));
@@ -221,11 +220,11 @@ namespace RampUp.Tests.Ring
             Received.InOrder(() =>
             {
                 // padding first
-                _atomicLong.VolatileWrite(new IntPtr(tail), MakeHeader(HeaderLength, PaddingMsgTypeId));
+                _atomicLong.VolatileWrite(new IntPtr(tail), RingBufferDescriptor.MakeHeader(RingBufferDescriptor.HeaderLength, RingBufferDescriptor.PaddingMsgTypeId));
 
                 // message then
-                _atomicLong.VolatileWrite(new IntPtr(0), MakeHeader(-recordLength, MessageTypeId));
-                _buffer.Write(EncodedMsgOffset(0), chunk);
+                _atomicLong.VolatileWrite(new IntPtr(0), RingBufferDescriptor.MakeHeader(-recordLength, MessageTypeId));
+                _buffer.Write(RingBufferDescriptor.EncodedMsgOffset(0), chunk);
                 _atomicInt.VolatileWrite(new IntPtr(0), recordLength);
             });
         }
@@ -267,14 +266,14 @@ namespace RampUp.Tests.Ring
         public void ShouldReadTwoMessages()
         {
             const int msgLength = 16;
-            var recordLength = HeaderLength + msgLength;
-            var alignedRecordLength = recordLength.AlignToMultipleOf(RecordAlignment);
+            var recordLength = RingBufferDescriptor.HeaderLength + msgLength;
+            var alignedRecordLength = recordLength.AlignToMultipleOf(RingBufferDescriptor.RecordAlignment);
             long tail = alignedRecordLength*2;
             const long head = 0L;
             const int headIndex = (int) head;
 
             _atomicLong.Read(Head).Returns(head);
-            var makeHeader = MakeHeader(recordLength, MessageTypeId);
+            var makeHeader = RingBufferDescriptor.MakeHeader(recordLength, MessageTypeId);
             _atomicLong.VolatileRead(new IntPtr(headIndex)).Returns(makeHeader);
             _atomicLong.VolatileRead(new IntPtr(headIndex + alignedRecordLength)).Returns(makeHeader);
 
@@ -296,13 +295,13 @@ namespace RampUp.Tests.Ring
         public void ShouldLimitReadOfMessages()
         {
             const int msgLength = 16;
-            var recordLength = HeaderLength + msgLength;
-            var alignedRecordLength = recordLength.AlignToMultipleOf(RecordAlignment);
+            var recordLength = RingBufferDescriptor.HeaderLength + msgLength;
+            var alignedRecordLength = recordLength.AlignToMultipleOf(RingBufferDescriptor.RecordAlignment);
             const long head = 0L;
             const int headIndex = (int) head;
 
             _atomicLong.Read(Head).Returns(head);
-            _atomicLong.VolatileRead(new IntPtr(headIndex)).Returns(MakeHeader(recordLength, MessageTypeId));
+            _atomicLong.VolatileRead(new IntPtr(headIndex)).Returns(RingBufferDescriptor.MakeHeader(recordLength, MessageTypeId));
 
             var counter = 0;
             MessageHandler h = (id, chunk) => counter++;
@@ -322,16 +321,16 @@ namespace RampUp.Tests.Ring
         public void ShouldCopeWithExceptionFromHandler()
         {
             const int msgLength = 16;
-            var recordLength = HeaderLength + msgLength;
-            var alignedRecordLength = recordLength.AlignToMultipleOf(RecordAlignment);
+            var recordLength = RingBufferDescriptor.HeaderLength + msgLength;
+            var alignedRecordLength = recordLength.AlignToMultipleOf(RingBufferDescriptor.RecordAlignment);
             var tail = alignedRecordLength*2;
             const long head = 0L;
             const int headIndex = (int) head;
 
             _atomicLong.Read(Head).Returns(head);
-            _atomicLong.VolatileRead(new IntPtr(headIndex)).Returns(MakeHeader(recordLength, MessageTypeId));
+            _atomicLong.VolatileRead(new IntPtr(headIndex)).Returns(RingBufferDescriptor.MakeHeader(recordLength, MessageTypeId));
             _atomicLong.VolatileRead(new IntPtr(headIndex + alignedRecordLength))
-                .Returns(MakeHeader(recordLength, MessageTypeId));
+                .Returns(RingBufferDescriptor.MakeHeader(recordLength, MessageTypeId));
 
             var counter = 0;
             MessageHandler h = (id, chunk) =>
@@ -366,7 +365,7 @@ namespace RampUp.Tests.Ring
         public void ShouldThrowExceptionForCapacityThatIsNotPowerOfTwo()
         {
             var unsafeBuffer = Substitute.For<IUnsafeBuffer>();
-            unsafeBuffer.Size.Returns(777 + TrailerLength);
+            unsafeBuffer.Size.Returns(777 + RingBufferDescriptor.TrailerLength);
             Assert.Throws<ArgumentException>(() => new ManyToOneRingBuffer(unsafeBuffer));
         }
 
@@ -382,8 +381,8 @@ namespace RampUp.Tests.Ring
         {
             const int padding = 200;
             const int messageLength = 400;
-            var recordLength = messageLength + HeaderLength;
-            var alignedRecordLength = recordLength.AlignToMultipleOf(RecordAlignment);
+            var recordLength = messageLength + RingBufferDescriptor.HeaderLength;
+            var alignedRecordLength = recordLength.AlignToMultipleOf(RingBufferDescriptor.RecordAlignment);
 
             const long tail = 2*Capacity - padding;
             const long head = tail;

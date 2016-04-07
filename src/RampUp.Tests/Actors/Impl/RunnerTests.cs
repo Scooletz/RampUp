@@ -47,7 +47,7 @@ namespace RampUp.Tests.Actors.Impl
                 return aCount + bCount;
             });
 
-            var runner = new Runner(buffer, new StructSizeCounter(), t => ids[t], batchSize, bHandler);
+            var runner = new Runner(buffer, new StructSizeCounter(), t => ids[t], batchSize, aHandler, bHandler);
             BatchInfo batch;
             runner.SpinOnce(out batch);
 
