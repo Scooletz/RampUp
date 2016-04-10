@@ -3,6 +3,7 @@ using NSubstitute;
 using NUnit.Framework;
 using RampUp.Actors;
 using RampUp.Actors.Impl;
+using RampUp.Ring;
 
 namespace RampUp.Tests.Actors.Impl
 {
@@ -36,7 +37,9 @@ namespace RampUp.Tests.Actors.Impl
         [Test]
         public void WhenPublish_ThenAllReceiversAreIncluded()
         {
-            var expectedCount = Registry.GetBuffers(typeof(A)).Length;
+            ArraySegment<IRingBuffer> buffers;
+            Registry.GetBuffers(typeof (A), out buffers);
+            var expectedCount = buffers.Count;
 
             A any;
             var e = new Envelope();
@@ -53,10 +56,11 @@ namespace RampUp.Tests.Actors.Impl
         {
             A any;
             var e = new Envelope();
-            _writer.Write(ref e, ref any, null).ReturnsForAnyArgs(call => false, call => false, call => false, call => true);
+            _writer.Write(ref e, ref any, null)
+                .ReturnsForAnyArgs(call => false, call => false, call => false, call => true);
             var a = new A();
 
-            Assert.Throws(Is.AssignableTo<Exception>(), ()=>_bus.Send(ref a, AId));
+            Assert.Throws(Is.AssignableTo<Exception>(), () => _bus.Send(ref a, AId));
         }
 
         [Test]

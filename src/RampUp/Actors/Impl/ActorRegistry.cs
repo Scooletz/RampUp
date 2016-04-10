@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Padded.Fody;
 using RampUp.Ring;
 
 namespace RampUp.Actors.Impl
@@ -9,11 +10,12 @@ namespace RampUp.Actors.Impl
     /// <summary>
     /// This class holds a registry of actors, aggregating them and precalculating different queries that are run against them.
     /// </summary>
+    [Padded]
     public sealed class ActorRegistry
     {
-        private readonly IRingBuffer[][] _buffersPerMessageType;
-        private readonly Dictionary<Type, int> _messageIdentifiers;
-        private readonly IRingBuffer[] _buffers;
+        private readonly IntLookup<ArraySegment<IRingBuffer>> _messageTypeToBuffers;
+        private readonly IRingBuffer[] _buffersByActor;
+        private readonly long _messageTypeDiff;
 
         public ActorRegistry(IReadOnlyCollection<Tuple<ActorDescriptor, IRingBuffer, ActorId>> actors)
         {
@@ -22,54 +24,84 @@ namespace RampUp.Actors.Impl
                 throw new ArgumentException("To many actors");
             }
 
-            _messageIdentifiers = actors.Select(t => t.Item1)
+            var messageTypesOrdered = actors.Select(t => t.Item1)
                 .SelectMany(d => d.HandledMessageTypes)
                 .Distinct()
-                .Select((t, i) => Tuple.Create(t, i + 1))
-                .ToDictionary(t => t.Item1, t => t.Item2);
+                .OrderBy(t => t.TypeHandle.Value.ToInt64())
+                .ToArray();
 
-            if (_messageIdentifiers.Count == 0)
+            if (messageTypesOrdered.Length == 0)
             {
                 throw new ArgumentException("The handled messages set is empty. This is a useless registry");
             }
 
+            _messageTypeDiff = messageTypesOrdered.First().TypeHandle.Value.ToInt64() - 1;
+
             var ringsGroupedByMessageId = actors.SelectMany(
                 t =>
                     t.Item1.HandledMessageTypes.Select(
-                        messageType => new {MessageTypeId = _messageIdentifiers[messageType], Buffer = t.Item2}))
-                .GroupBy(a => a.MessageTypeId);
+                        messageType => new {MessageTypeId = GetMessageTypeId(messageType), Buffer = t.Item2}))
+                .GroupBy(a => a.MessageTypeId)
+                .ToArray();
 
-            _buffersPerMessageType = new IRingBuffer[_messageIdentifiers.Count + 1][];
-            foreach (var rings in ringsGroupedByMessageId)
+            var buffers = new List<IRingBuffer>();
+            AddPadding(buffers);
+
+            var count = ringsGroupedByMessageId.Length;
+            var keys = new int[count];
+            var values = new Tuple<int, int>[count];
+            var index = 0;
+
+            foreach (var g in ringsGroupedByMessageId)
             {
-                _buffersPerMessageType[rings.Key] = rings.Select(a => a.Buffer).ToArray();
+                keys[index] = g.Key;
+                var start = buffers.Count;
+                buffers.AddRange(g.Select(tuple => tuple.Buffer));
+                var end = buffers.Count;
+                var length = end - start;
+
+                values[index] = Tuple.Create(start, length);
+                index += 1;
             }
 
+            AddPadding(buffers);
+
+            // create one table
+            var bufferArray = buffers.ToArray();
+            var valuesArray =
+                values.Select(tuple => new ArraySegment<IRingBuffer>(bufferArray, tuple.Item1, tuple.Item2)).ToArray();
+
+            _messageTypeToBuffers = new IntLookup<ArraySegment<IRingBuffer>>(keys, valuesArray);
+
+            // by actor
             var max = actors.Max(t => t.Item3.Value);
-            _buffers = new IRingBuffer[max + 1];
+            _buffersByActor = new IRingBuffer[max + 1];
 
             foreach (var actor in actors)
             {
-                _buffers[actor.Item3.Value] = actor.Item2;
+                _buffersByActor[actor.Item3.Value] = actor.Item2;
+            }
+        }
+
+        private static void AddPadding(List<IRingBuffer> buffers)
+        {
+            for (var i = 0; i < Native.CacheLineSize/Native.SmallestPossibleObjectReferenceSize; i++)
+            {
+                buffers.Add(null);
             }
         }
 
         public int GetMessageTypeId(Type messageType)
         {
-            return _messageIdentifiers[messageType];
+            return (int) (messageType.TypeHandle.Value.ToInt64() - _messageTypeDiff);
         }
 
-        public IRingBuffer[] GetBuffers(Type messageType)
+        public void GetBuffers(Type messageType, out ArraySegment<IRingBuffer> buffers)
         {
-            return _buffersPerMessageType[GetMessageTypeId(messageType)];
+            _messageTypeToBuffers.GetOrDefault(GetMessageTypeId(messageType), out buffers);
         }
 
-        public IRingBuffer[] GetBuffers(int messageTypeId)
-        {
-            return _buffersPerMessageType[messageTypeId];
-        }
-
-        public IRingBuffer this[ActorId actor] => _buffers[actor.Value];
+        public IRingBuffer this[ActorId actor] => _buffersByActor[actor.Value];
 
         /// <summary>
         /// Gets all the methods handling messages, declared in <paramref name="handlerType"/>.

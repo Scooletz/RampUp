@@ -11,6 +11,7 @@ namespace RampUp
     {
         public const int MemoryAllocationAlignment = 16;
         public const int CacheLineSize = 64;
+        public const int SmallestPossibleObjectReferenceSize = 4;
         public const int PtrSize = 8; //IntPtr.Size
 
         [DllImport("kernel32.dll", SetLastError = true)]
@@ -81,7 +82,7 @@ namespace RampUp
 
         public delegate void MemcpyToUnmanagedDelegate(byte* pDest, int destIndex, byte[] src, int srcIndex, int len);
 
-        public delegate void MemcpyUnmanagedDelegate (byte* dest, byte* src, int len);
+        public delegate void MemcpyUnmanagedDelegate(byte* dest, byte* src, int len);
 
         public delegate void ZeroMemoryDelegate(byte* src, long len);
 
@@ -108,12 +109,12 @@ namespace RampUp
                     }));
 
             MemcpyToUnmanaged =
-              (MemcpyToUnmanagedDelegate)
-                  Delegate.CreateDelegate(typeof(MemcpyToUnmanagedDelegate), bufferMemCpyMethods.Single(mi =>
-                  {
-                      var parameters = mi.GetParameters();
-                      return parameters.Length == 5 && parameters[0].ParameterType == typeof(byte*);
-                  }));
+                (MemcpyToUnmanagedDelegate)
+                    Delegate.CreateDelegate(typeof (MemcpyToUnmanagedDelegate), bufferMemCpyMethods.Single(mi =>
+                    {
+                        var parameters = mi.GetParameters();
+                        return parameters.Length == 5 && parameters[0].ParameterType == typeof (byte*);
+                    }));
 
             MemcpyUnmanaged =
                 (MemcpyUnmanagedDelegate)
@@ -124,7 +125,7 @@ namespace RampUp
                 (ZeroMemoryDelegate)
                     Delegate.CreateDelegate(typeof (ZeroMemoryDelegate),
                         staticMethods.Single(mi => mi.Name == "ZeroMemory"));
-            
+
             GetSystemInfo(out Info);
         }
 

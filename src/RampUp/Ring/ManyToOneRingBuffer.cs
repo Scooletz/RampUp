@@ -1,10 +1,12 @@
 using System;
+using Padded.Fody;
 using RampUp.Atomics;
 using RampUp.Buffers;
 using static RampUp.Ring.RingBufferDescriptor;
 
 namespace RampUp.Ring
 {
+    [Padded]
     public sealed class ManyToOneRingBuffer : IRingBuffer, IDisposable
     {
         private const int InsufficientCapacity = -1;

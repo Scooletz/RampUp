@@ -88,6 +88,7 @@
     <Compile Include="Buffers\Segment.cs" />
     <Compile Include="Buffers\SegmentStream.cs" />
     <Compile Include="Buffers\UnsafeBuffer.cs" />
+    <Compile Include="PaddedAttribute.cs" />
     <Compile Include="Native.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Ring\IRingBuffer.cs" />

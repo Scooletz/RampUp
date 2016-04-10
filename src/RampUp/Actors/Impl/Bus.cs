@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Threading;
+using Padded.Fody;
 using RampUp.Ring;
 
 namespace RampUp.Actors.Impl
 {
+    [Padded]
     public sealed class Bus : IBus
     {
         private ActorId _owner;
@@ -38,10 +40,19 @@ namespace RampUp.Actors.Impl
             where TMessage : struct
         {
             var envelope = new Envelope(_owner);
-            var buffers = _registry.GetBuffers(typeof (TMessage));
-            for (var i = 0; i < buffers.Length; i++)
+            ArraySegment<IRingBuffer> buffers;
+            _registry.GetBuffers(typeof(TMessage), out buffers);
+
+            if (buffers.Count == 0)
             {
-                var buffer = buffers[i];
+                throw new ArgumentException($"There's no handler registered for a message of type {typeof(TMessage)}");
+            }
+
+            var a = buffers.Array;
+            var notGreaterThan = buffers.Count + buffers.Offset;
+            for (var i = buffers.Offset; i < notGreaterThan; i++)
+            {
+                var buffer = a[i];
                 Write(ref msg, envelope, buffer);
             }
         }
