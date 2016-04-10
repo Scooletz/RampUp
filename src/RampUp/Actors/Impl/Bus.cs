@@ -41,11 +41,11 @@ namespace RampUp.Actors.Impl
         {
             var envelope = new Envelope(_owner);
             ArraySegment<IRingBuffer> buffers;
-            _registry.GetBuffers(typeof(TMessage), out buffers);
+            _registry.GetBuffers(typeof (TMessage), out buffers);
 
             if (buffers.Count == 0)
             {
-                throw new ArgumentException($"There's no handler registered for a message of type {typeof(TMessage)}");
+                throw new ArgumentException($"There's no handler registered for a message of type {typeof (TMessage)}");
             }
 
             var a = buffers.Array;
@@ -77,7 +77,7 @@ namespace RampUp.Actors.Impl
         private void Write<TMessage>(ref TMessage msg, Envelope envelope, IRingBuffer buffer)
             where TMessage : struct
         {
-            var successful = _writer.Write(ref envelope, ref msg, buffer.Write);
+            var successful = _writer.Write(ref envelope, ref msg, buffer);
             if (successful == false)
             {
                 var wait = new SpinWait();
@@ -90,7 +90,7 @@ namespace RampUp.Actors.Impl
                     }
                     counter += 1;
                     wait.SpinOnce();
-                    successful = _writer.Write(ref envelope, ref msg, buffer.Write);
+                    successful = _writer.Write(ref envelope, ref msg, buffer);
                 } while (successful == false);
             }
         }

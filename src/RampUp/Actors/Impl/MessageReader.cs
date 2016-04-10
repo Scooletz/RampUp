@@ -2,7 +2,6 @@
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
-using System.Runtime.InteropServices;
 using RampUp.Buffers;
 
 namespace RampUp.Actors.Impl
@@ -62,16 +61,16 @@ namespace RampUp.Actors.Impl
 
                 // push envelope
                 il.Emit(OpCodes.Ldarg_2);
-                il.Emit(OpCodes.Ldfld, typeof(ByteChunk).GetField("Pointer"));
+                il.Emit(OpCodes.Ldfld, typeof (ByteChunk).GetField("Pointer"));
 
                 //var messageType = method.Value.GetParameters()[1].ParameterType.GetElementType();
                 //il.Emit(OpCodes.Ldc_I4, (int)Marshal.OffsetOf(messageType, Envelope.FieldName));
                 //il.Emit(OpCodes.Add);
-                
+
                 // push message
                 il.Emit(OpCodes.Ldarg_2);
-                il.Emit(OpCodes.Ldfld, typeof(ByteChunk).GetField("Pointer"));
-                
+                il.Emit(OpCodes.Ldfld, typeof (ByteChunk).GetField("Pointer"));
+
                 il.EmitCall(OpCodes.Callvirt, method.Value, null);
                 il.Emit(OpCodes.Br_S, endLbl);
                 il.MarkLabel(lbl);
@@ -88,7 +87,7 @@ namespace RampUp.Actors.Impl
 
         public static unsafe Envelope T(ByteChunk ch)
         {
-            return *((Envelope*)(ch.Pointer+2));
+            return *((Envelope*) (ch.Pointer + 2));
         }
 
         public struct A

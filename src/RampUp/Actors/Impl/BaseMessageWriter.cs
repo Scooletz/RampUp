@@ -1,10 +1,11 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using RampUp.Buffers;
+using RampUp.Ring;
 
 namespace RampUp.Actors.Impl
 {
@@ -41,11 +42,12 @@ namespace RampUp.Actors.Impl
             _metadata = new IntLookup<MessageMetadata>(keys, values);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected MessageMetadata GetMessageMetadata(RuntimeTypeHandle handle)
         {
             var key = (int) (handle.Value.ToInt64() - _typePointerDiff);
             MessageMetadata value;
-            _metadata.TryGet(key, out value);
+            _metadata.GetOrDefault(key, out value);
             return value;
         }
 
@@ -91,7 +93,7 @@ namespace RampUp.Actors.Impl
             il.EmitCall(OpCodes.Call, getMessageMetadata, null);
             il.Emit(OpCodes.Stloc_0);
 
-            // writer first
+            // buffer first
             il.Emit(OpCodes.Ldarg_3);
 
             // message id
@@ -116,7 +118,7 @@ namespace RampUp.Actors.Impl
             il.Emit(OpCodes.Newobj, byteChunkCtor);
 
             //// call writer
-            var writeMethod = typeof (WriteDelegate).GetMethod("Invoke");
+            var writeMethod = typeof (IRingBuffer).GetMethod("Write");
             il.EmitCall(OpCodes.Callvirt, writeMethod, null);
             il.Emit(OpCodes.Ret);
         }
@@ -124,7 +126,7 @@ namespace RampUp.Actors.Impl
 
     internal sealed class SomeWriter : BaseMessageWriter, IMessageWriter
     {
-        public bool Write<TMessage>(ref Envelope envelope, ref TMessage message, WriteDelegate write)
+        public bool Write<TMessage>(ref Envelope envelope, ref TMessage message, IRingBuffer bufferToWrite)
             where TMessage : struct
         {
             throw new NotImplementedException();

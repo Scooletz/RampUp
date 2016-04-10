@@ -4,6 +4,7 @@ using NUnit.Framework;
 using RampUp.Actors;
 using RampUp.Actors.Impl;
 using RampUp.Buffers;
+using RampUp.Ring;
 
 namespace RampUp.Tests.Actors
 {
@@ -14,7 +15,7 @@ namespace RampUp.Tests.Actors
 
         public readonly List<Guid> Received = new List<Guid>();
 
-        public unsafe bool Write<TMessage>(ref Envelope envelope, ref TMessage message, WriteDelegate write)
+        public unsafe bool Write<TMessage>(ref Envelope envelope, ref TMessage message, IRingBuffer bufferToWrite)
             where TMessage : struct
         {
             if (typeof (TMessage) != typeof (Guid))
@@ -22,10 +23,10 @@ namespace RampUp.Tests.Actors
                 throw new ArgumentException("Guids only!");
             }
 
-            var guid = (Guid) ((object) message);
+            var guid = (Guid) (object) message;
 
             var ch1 = new ByteChunk((byte*) &guid, 16);
-            return write(MessageId, ch1);
+            return bufferToWrite.Write(MessageId, ch1);
         }
 
         public unsafe void MessageHandler(int messageTypeId, ByteChunk chunk)

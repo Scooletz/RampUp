@@ -1,4 +1,5 @@
-﻿using System.Runtime.InteropServices;
+﻿using System;
+using System.Runtime.InteropServices;
 using RampUp.Buffers;
 using RampUp.Ring;
 
@@ -7,7 +8,7 @@ namespace RampUp.Actors.Impl
     /// <summary>
     /// A class storying & reading messages from segments chains. May be used to accumulate messages
     /// </summary>
-    public unsafe class SegmentChainMessageStore
+    public unsafe class SegmentChainMessageStore : IRingBuffer
     {
         private const int SegmentHeaderSize = 8;
         private readonly IMessageWriter _writer;
@@ -32,7 +33,7 @@ namespace RampUp.Actors.Impl
             }
 
             _currentHead = head;
-            _writer.Write(ref envelope, ref message, Write);
+            _writer.Write(ref envelope, ref message, this);
         }
 
         public void Consume(MessageHandler handler, ref Segment* head)
@@ -62,7 +63,22 @@ namespace RampUp.Actors.Impl
             }
         }
 
-        private bool Write(int messagetypeid, ByteChunk chunk)
+        int IRingBuffer.Capacity
+        {
+            get { throw new NotImplementedException(); }
+        }
+
+        int IRingBuffer.MaximumMessageLength
+        {
+            get { throw new NotImplementedException(); }
+        }
+
+        int IRingBuffer.Read(MessageHandler handler, int messageProcessingLimit)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        bool IRingBuffer.Write(int messagetypeid, ByteChunk chunk)
         {
             var neededBytes = GetNeededBytes(chunk.Length);
             var tail = _currentHead->Tail;
