@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using Padded.Fody;
 using RampUp.Ring;
 
 namespace RampUp.Actors.Impl
@@ -7,6 +8,7 @@ namespace RampUp.Actors.Impl
     /// <summary>
     /// A runner for a set of actors providing <see cref="SpinOnce"/> method for an actual thread/task.
     /// </summary>
+    [Padded]
     public sealed class Runner
     {
         public readonly IRingBuffer Buffer;

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using Padded.Fody;
 using RampUp.Buffers;
 
 namespace RampUp.Actors.Impl
@@ -8,6 +9,7 @@ namespace RampUp.Actors.Impl
     /// <summary>
     /// A simple implementation of composite actor, providing a common <see cref="MessageHandler"/> method for all composed actors
     /// </summary>
+    [Padded]
     public sealed class CompositeActor : IActor, IBatchAware
     {
         public readonly ActorDescriptor Descriptor;

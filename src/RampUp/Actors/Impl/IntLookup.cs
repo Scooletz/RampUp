@@ -1,12 +1,14 @@
 ﻿using System;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using Padded.Fody;
 
 namespace RampUp.Actors.Impl
 {
     /// <summary>
     /// A very fast lookup based on types as keys.
     /// </summary>
+    [Padded]
     public sealed class IntLookup<TValue>
         where TValue : struct
     {
@@ -22,7 +24,7 @@ namespace RampUp.Actors.Impl
         {
             if (keys.Any(k => k <= 0))
             {
-                throw new ArgumentException("Only positive values allowed");
+                throw new ArgumentException("Only positive keys allowed");
             }
 
             _length = 1 << (keys.Length.Log2() + 1);
@@ -82,6 +84,24 @@ namespace RampUp.Actors.Impl
 
             value = default(TValue);
             return false;
+        }
+
+        public void GetOrDefault(int key, out TValue value)
+        {
+            var hash = Hash(key);
+            var index = hash & _lengthMask;
+
+            for (var i = 0; i < _length; i++)
+            {
+                var position = ((index + i) & _lengthMask) + PadWithElements;
+                if (_keys[position] == key)
+                {
+                    value = _values[position];
+                    return;
+                }
+            }
+
+            value = default(TValue);
         }
     }
 }

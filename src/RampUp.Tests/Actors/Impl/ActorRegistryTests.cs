@@ -10,12 +10,12 @@ namespace RampUp.Tests.Actors.Impl
     public class ActorRegistryTests : ActorRegistryTestsBase
     {
         [Test]
-        public void MessageTypeIdsAreAssignedUniquelyAndContinouslyFromZero()
+        public void MessageTypeIdsAreAssignedUniquely()
         {
             var messageTypes = new[] {typeof (A), typeof (B)};
-            var ids = messageTypes.Select(t => Registry.GetMessageTypeId(t)).OrderBy(k => k);
+            var ids = messageTypes.Select(t => Registry.GetMessageTypeId(t)).Distinct().Count();
 
-            CollectionAssert.AreEqual(new[] {1, 2}, ids);
+            Assert.AreEqual(2, ids);
         }
 
         [Test]
@@ -30,8 +30,10 @@ namespace RampUp.Tests.Actors.Impl
         [Test]
         public void BuffersAreResolvedPropertlyByMessageType()
         {
-            var aBuffers = Registry.GetBuffers(typeof (A));
-            var bBuffers = Registry.GetBuffers(typeof (B));
+            ArraySegment<IRingBuffer> aBuffers;
+            Registry.GetBuffers(typeof (A), out aBuffers);
+            ArraySegment<IRingBuffer> bBuffers;
+            Registry.GetBuffers(typeof (B), out bBuffers);
 
             CollectionAssert.AreEquivalent(new[] {ABuffer, AbBuffer}, aBuffers);
             CollectionAssert.AreEquivalent(new[] {AbBuffer}, bBuffers);

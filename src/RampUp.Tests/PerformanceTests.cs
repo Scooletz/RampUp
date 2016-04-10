@@ -5,6 +5,7 @@ using System.Reflection.Emit;
 using System.Threading;
 using System.Threading.Tasks;
 using NUnit.Framework;
+using Padded.Fody;
 using RampUp.Actors;
 using RampUp.Actors.Impl;
 using RampUp.Buffers;
@@ -21,6 +22,7 @@ namespace RampUp.Tests
             public int Value;
         }
 
+        [Padded]
         public sealed class Handler : IHandle<A>
         {
             public void Handle(ref Envelope envelope, ref A msg)
@@ -65,15 +67,11 @@ namespace RampUp.Tests
                     var p2 = CreateProducer(wait, t, howMany, bus, scheduler);
                     var producentCount = 2;
                     var totalMessageCount = howMany*producentCount;
-                    var consumer = Task.Factory.StartNew(() =>
-                    {
-                        var c = 0;
-                        wait.Wait(t);
-                        while (c < totalMessageCount)
-                        {
-                            buffer.Read((msgdI, chunk) => { c++; }, 10000);
-                        }
-                    }, t, TaskCreationOptions.LongRunning, scheduler);
+
+                    var worker = new Worker(totalMessageCount, wait, buffer, t);
+                    var consumer = Task.Factory.StartNew(worker.DoWhile, t, TaskCreationOptions.LongRunning, scheduler);
+
+                    GC.Collect(2, GCCollectionMode.Forced);
 
                     var sw = Stopwatch.StartNew();
                     wait.Set();
@@ -101,6 +99,38 @@ namespace RampUp.Tests
                     bus.Publish(ref a);
                 }
             }, t, TaskCreationOptions.LongRunning, scheduler);
+        }
+
+        [Padded]
+        private sealed class Worker
+        {
+            private int _countDown;
+            private readonly ManualResetEventSlim _wait;
+            private readonly ManyToOneRingBuffer _buffer;
+            private readonly CancellationToken _token;
+
+            public Worker(int countDown, ManualResetEventSlim wait, ManyToOneRingBuffer buffer, CancellationToken token)
+            {
+                _countDown = countDown;
+                _wait = wait;
+                _buffer = buffer;
+                _token = token;
+            }
+
+            public void DoWhile()
+            {
+                _wait.Wait(_token);
+
+                while (_countDown > 0)
+                {
+                    _buffer.Read(Signal, 10000);
+                }
+            }
+
+            private void Signal(int messagetypeid, ByteChunk chunk)
+            {
+                _countDown -= 1;
+            }
         }
     }
 }
