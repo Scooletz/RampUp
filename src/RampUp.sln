@@ -20,6 +20,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{C88F7D
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RampUp.Enveloper.Fody", "RampUp.Enveloper.Fody\RampUp.Enveloper.Fody.csproj", "{C5136CFB-BB51-4F06-BFEF-0A690FBD7D50}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RampUp.Benchmarks", "RampUp.Benchmarks\RampUp.Benchmarks.csproj", "{1BD38F2A-D72E-49F8-97D9-44D8846ED1F3}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -38,6 +40,10 @@ Global
 		{C5136CFB-BB51-4F06-BFEF-0A690FBD7D50}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C5136CFB-BB51-4F06-BFEF-0A690FBD7D50}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C5136CFB-BB51-4F06-BFEF-0A690FBD7D50}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1BD38F2A-D72E-49F8-97D9-44D8846ED1F3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1BD38F2A-D72E-49F8-97D9-44D8846ED1F3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1BD38F2A-D72E-49F8-97D9-44D8846ED1F3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1BD38F2A-D72E-49F8-97D9-44D8846ED1F3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
