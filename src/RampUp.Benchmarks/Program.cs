@@ -1,8 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using BenchmarkDotNet.Running;
+
+using RampUp.Benchmarks.Actors.Impl;
 
 namespace RampUp.Benchmarks
 {
@@ -10,6 +8,7 @@ namespace RampUp.Benchmarks
     {
         static void Main(string[] args)
         {
+            var summary = BenchmarkRunner.Run<BusBenchmarks>();
         }
     }
 }
