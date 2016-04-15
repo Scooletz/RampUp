@@ -7,13 +7,17 @@ namespace RampUp.Tests.Actors
 {
     public class ActorSystemTests
     {
+        private const int PingPongCount = 1000;
+        private const int PingCount = PingPongCount/2;
+        private const int PongCount = PingCount;
+
         [Test]
         public void BruceLeePingPong()
         {
             var system = new ActorSystem();
             IBus bus = null;
 
-            var pingPong = new CountdownEvent(1000);
+            var pingPong = new CountdownEvent(PingPongCount);
 
             var bruce = new Bruce(pingPong);
             var lee = new Lee(pingPong);
@@ -33,6 +37,7 @@ namespace RampUp.Tests.Actors
         public class Bruce : IHandle<Ping>
         {
             private readonly CountdownEvent _pingPong;
+            private int _counter;
             public IBus Bus;
 
             public Bruce(CountdownEvent pingPong)
@@ -42,8 +47,15 @@ namespace RampUp.Tests.Actors
 
             public void Handle(ref Envelope envelope, ref Ping msg)
             {
+                if (_counter == PongCount)
+                {
+                    return;
+                }
+
                 var p = new Pong();
                 Bus.Publish(ref p);
+
+                _counter += 1;
                 _pingPong.Signal();
             }
         }
@@ -52,6 +64,7 @@ namespace RampUp.Tests.Actors
         {
             public IBus Bus;
             private readonly CountdownEvent _pingPong;
+            private int _counter;
 
             public Lee(CountdownEvent pingPong)
             {
@@ -60,8 +73,15 @@ namespace RampUp.Tests.Actors
 
             public void Handle(ref Envelope envelope, ref Pong msg)
             {
+                if (_counter == PongCount)
+                {
+                    return;
+                }
+
                 var p = new Ping();
                 Bus.Publish(ref p);
+
+                _counter += 1;
                 _pingPong.Signal();
             }
         }

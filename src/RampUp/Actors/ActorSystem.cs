@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -24,6 +25,7 @@ namespace RampUp.Actors
         private readonly List<Func<Runner>> _registrations = new List<Func<Runner>>();
         private readonly HashSet<Type> _messageTypes = new HashSet<Type>();
         private readonly Dictionary<Runner, Bus> _runnerBusMap = new Dictionary<Runner, Bus>();
+        private readonly ConcurrentBag<Exception> _exceptionsThrown = new ConcurrentBag<Exception>();
         private long _messageTypePointerDiff;
         private IntLookup<int> _identifiers;
         private readonly List<ManyToOneRingBuffer> _buffers = new List<ManyToOneRingBuffer>();
@@ -98,10 +100,21 @@ namespace RampUp.Actors
             {
                 return factory.StartNew(() =>
                 {
-                    while (token.IsCancellationRequested == false)
+                    try
                     {
-                        BatchInfo info;
-                        runner.SpinOnce(out info);
+                        while (token.IsCancellationRequested == false)
+                        {
+                            BatchInfo info;
+                            runner.SpinOnce(out info);
+                        }
+                    }
+                    catch (TaskCanceledException)
+                    {
+                    }
+                    catch (Exception e)
+                    {
+                        _exceptionsThrown.Add(e);
+                        _source.Cancel();
                     }
                 }, token);
             }).ToArray();
@@ -135,6 +148,15 @@ namespace RampUp.Actors
         {
             _source.Cancel();
             _end.Wait();
+
+            if (_exceptionsThrown.Count == 1)
+            {
+                throw _exceptionsThrown.First();
+            }
+            if (_exceptionsThrown.Count > 1)
+            {
+                throw new AggregateException(_exceptionsThrown);
+            }
         }
 
         private void InitMessageTypesDictionary()
