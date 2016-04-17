@@ -63,7 +63,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Actors\ActorSystemTests.cs" />
+    <Compile Include="Actors\BruceLeePingPong.cs" />
     <Compile Include="Actors\FakeMessageIdGenerator.cs" />
     <Compile Include="Actors\Impl\ActorRegistryTests.cs" />
     <Compile Include="Actors\Impl\BusTests.cs" />
