@@ -58,6 +58,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Actors\Impl\BusBenchmarks.cs" />
+    <Compile Include="Monomorphic.cs" />
     <Compile Include="PaddedAttribute.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

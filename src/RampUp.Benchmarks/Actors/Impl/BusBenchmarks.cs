@@ -1,11 +1,8 @@
 ﻿using System;
 using System.Reflection;
 using System.Reflection.Emit;
-
 using BenchmarkDotNet.Attributes;
-
 using Padded.Fody;
-
 using RampUp.Actors;
 using RampUp.Actors.Impl;
 using RampUp.Buffers;
@@ -33,11 +30,10 @@ namespace RampUp.Benchmarks.Actors.Impl
             var registry =
                 new ActorRegistry(
                     new[]
-                        { Tuple.Create(new ActorDescriptor(new Handler()), (IRingBuffer)_buffer, new ActorId(1)) });
-            var writer = BaseMessageWriter.Build(counter, registry.GetMessageTypeId, new[] { typeof(A) }, module);
+                    {Tuple.Create(new ActorDescriptor(new Handler()), (IRingBuffer) _buffer, new ActorId(1))});
+            var writer = BaseMessageWriter.Build(counter, registry.GetMessageTypeId, new[] {typeof (A)}, module);
 
             _bus = new Bus(new ActorId(2), registry, 20, writer);
-
         }
 
         [Benchmark]

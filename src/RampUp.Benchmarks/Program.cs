@@ -1,5 +1,4 @@
 ﻿using BenchmarkDotNet.Running;
-
 using RampUp.Benchmarks.Actors.Impl;
 
 namespace RampUp.Benchmarks
@@ -8,7 +7,7 @@ namespace RampUp.Benchmarks
     {
         static void Main(string[] args)
         {
-            var summary = BenchmarkRunner.Run<BusBenchmarks>();
+            var summary = BenchmarkRunner.Run<MonomorphicTests>();
         }
     }
 }
