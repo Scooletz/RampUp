@@ -63,12 +63,15 @@
     <Compile Include="Actors\IMessage.cs" />
     <Compile Include="Actors\Impl\ActorDescriptor.cs" />
     <Compile Include="Actors\Impl\ActorRegistry.cs" />
-    <Compile Include="Actors\Impl\BaseMessageWriter.cs" />
+    <Compile Include="Actors\Impl\MessageWriterBuilder.cs" />
     <Compile Include="Actors\Impl\Bus.cs" />
     <Compile Include="Actors\Impl\CompositeActor.cs" />
     <Compile Include="Actors\Impl\IMessageWriter.cs" />
+    <Compile Include="Actors\Impl\LongLookup.cs" />
     <Compile Include="Actors\Impl\IStructSizeCounter.cs" />
+    <Compile Include="Actors\Impl\MessageMetadata.cs" />
     <Compile Include="Actors\Impl\MessageReader.cs" />
+    <Compile Include="Actors\Impl\Reflector.cs" />
     <Compile Include="Actors\Impl\Runner.cs" />
     <Compile Include="Actors\Impl\SegmentChainMessageStore.cs" />
     <Compile Include="Actors\Impl\StructSizeCounter.cs" />

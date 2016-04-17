@@ -41,11 +41,11 @@ namespace RampUp.Actors.Impl
         {
             var envelope = new Envelope(_owner);
             ArraySegment<IRingBuffer> buffers;
-            _registry.GetBuffers(typeof (TMessage), out buffers);
+            _registry.GetBuffers(typeof(TMessage), out buffers);
 
             if (buffers.Count == 0)
             {
-                throw new ArgumentException($"There's no handler registered for a message of type {typeof (TMessage)}");
+                throw new ArgumentException($"There's no handler registered for a message of type {typeof(TMessage)}");
             }
 
             var a = buffers.Array;

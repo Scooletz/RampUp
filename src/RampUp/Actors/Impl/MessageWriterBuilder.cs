@@ -2,62 +2,38 @@ using System;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using RampUp.Buffers;
 using RampUp.Ring;
 
 namespace RampUp.Actors.Impl
 {
-    public abstract class BaseMessageWriter
+    public static class MessageWriterBuilder
     {
-        private IntLookup<MessageMetadata> _metadata;
-        private long _typePointerDiff;
-
-        protected struct MessageMetadata
-        {
-            public readonly int Id;
-            public readonly short Size;
-            public readonly short EnvelopeOffset;
-
-            public MessageMetadata(int id, short size, short envelopeOffset)
-            {
-                Id = id;
-                Size = size;
-                EnvelopeOffset = envelopeOffset;
-            }
-        }
-
-        protected void Init(IStructSizeCounter counter, Func<Type, int> messageIdGetter, Type[] structTypes)
-        {
-            var typePointers = structTypes.Select(t => t.TypeHandle.Value.ToInt64()).ToArray();
-            _typePointerDiff = typePointers.Min() - 1;
-            // -1 to ensure that when a diff is applied it's still positive
-
-            var keys = typePointers.Select(p => (int) (p - _typePointerDiff)).ToArray();
-            var values =
-                structTypes.Select(type => new MessageMetadata(messageIdGetter(type), (short) counter.GetSize(type),
-                    (short) (int) Marshal.OffsetOf(type, Envelope.FieldName))).ToArray();
-
-            _metadata = new IntLookup<MessageMetadata>(keys, values);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected MessageMetadata GetMessageMetadata(RuntimeTypeHandle handle)
-        {
-            var key = (int) (handle.Value.ToInt64() - _typePointerDiff);
-            MessageMetadata value;
-            _metadata.GetOrDefault(key, out value);
-            return value;
-        }
+        private static readonly Type LookupType = typeof (LongLookup<MessageMetadata>);
 
         public static IMessageWriter Build(IStructSizeCounter counter, Func<Type, int> messageIdGetter,
             Type[] structTypes, ModuleBuilder module)
         {
-            var writer = module.DefineType("MessageWriter", typeof (SomeWriter).Attributes, typeof (BaseMessageWriter));
+            const string metadataFieldName = "metadata";
+            var writer = module.DefineType("MessageWriter", typeof (SomeWriter).Attributes, typeof (object));
+            writer.PadBefore();
+            var metadataField = writer.DefineField(metadataFieldName, LookupType, FieldAttributes.Public);
+            writer.PadAfter();
             writer.AddInterfaceImplementation(typeof (IMessageWriter));
-            var mi = typeof (SomeWriter).GetMethod("Write");
 
+            BuildWriteMethod(writer, metadataField);
+
+            // initialize
+            var metadata = MessageMetadata.BuildMetadata(counter, messageIdGetter, structTypes);
+
+            var instance = Activator.CreateInstance(writer.CreateType());
+            instance.GetType().GetField(metadataFieldName).SetValue(instance, metadata);
+            return (IMessageWriter) instance;
+        }
+
+        public static void BuildWriteMethod(TypeBuilder writer, FieldBuilder metadataField)
+        {
+            var mi = typeof (SomeWriter).GetMethod("Write");
             var parameterTypes = mi.GetParameters().Select(pi => pi.ParameterType).ToArray();
             var requiredCustomModifiers = mi.GetParameters().Select(pi => pi.GetRequiredCustomModifiers()).ToArray();
             var optionalCustomModifiers = mi.GetParameters().Select(pi => pi.GetOptionalCustomModifiers()).ToArray();
@@ -69,15 +45,10 @@ namespace RampUp.Actors.Impl
             var genericParameters = method.DefineGenericParameters("TMessage");
             genericParameters[0].SetGenericParameterAttributes(GenericParameterAttributes.None);
 
-            EmitBody(method);
-
-            // initialize
-            var instance = Activator.CreateInstance(writer.CreateType());
-            ((BaseMessageWriter) instance).Init(counter, messageIdGetter, structTypes);
-            return (IMessageWriter) instance;
+            EmitBody(method, metadataField);
         }
 
-        private static void EmitBody(MethodBuilder method)
+        private static void EmitBody(MethodBuilder method, FieldInfo metadataField)
         {
             var byteChunkCtor = typeof (ByteChunk).GetConstructors().Single(ci => ci.GetParameters().Length == 2);
 
@@ -86,11 +57,13 @@ namespace RampUp.Actors.Impl
 
             // load meta dictionary
             il.Emit(OpCodes.Ldarg_0);
-
-            var getMessageMetadata = typeof (BaseMessageWriter).GetMethod("GetMessageMetadata",
-                BindingFlags.NonPublic | BindingFlags.Instance);
+            il.Emit(OpCodes.Ldfld, metadataField);
             il.Emit(OpCodes.Ldtoken, method.GetGenericArguments()[0]);
-            il.EmitCall(OpCodes.Call, getMessageMetadata, null);
+            var getKey = typeof (MessageMetadata).GetMethod("GetKey", new[] {typeof (RuntimeTypeHandle)}, null);
+            il.EmitCall(OpCodes.Call, getKey, null);
+            var getOrDefault = LookupType.GetMethod("GetOrDefault");
+            il.EmitCall(OpCodes.Call, getOrDefault, null);
+
             il.Emit(OpCodes.Stloc_0);
 
             // buffer first
@@ -124,7 +97,7 @@ namespace RampUp.Actors.Impl
         }
     }
 
-    internal sealed class SomeWriter : BaseMessageWriter, IMessageWriter
+    internal sealed class SomeWriter : IMessageWriter
     {
         public bool Write<TMessage>(ref Envelope envelope, ref TMessage message, IRingBuffer bufferToWrite)
             where TMessage : struct

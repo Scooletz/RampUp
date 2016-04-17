@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -76,7 +75,7 @@ namespace RampUp.Actors
                 AssemblyBuilderAccess.Run).DefineDynamicModule("main");
 
             InitMessageTypesDictionary();
-            var writer = BaseMessageWriter.Build(_counter, GetMessageId, _messageTypes.ToArray(), module);
+            var writer = MessageWriterBuilder.Build(_counter, GetMessageId, _messageTypes.ToArray(), module);
 
             var runners = _registrations.Select(f => f()).ToList();
             if (_featureActors.Count > 0)

@@ -23,14 +23,18 @@ namespace RampUp.Tests.Actors
             BruceLeePingPong.Test();
         }
 
-        public class ThrowingHandler : IHandle<Guid>
+        public class ThrowingHandler : IHandle<Message>
         {
             public static readonly Exception Exception = new Exception();
 
-            public void Handle(ref Envelope envelope, ref Guid msg)
+            public void Handle(ref Envelope envelope, ref Message msg)
             {
                 throw Exception;
             }
+        }
+
+        public struct Message : IMessage
+        {
         }
 
         public class BruceLeePingPong
