@@ -36,7 +36,7 @@ namespace RampUp.Tests.Actors.Impl
             var asm = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName("AnythingForTests"),
                 AssemblyBuilderAccess.Run);
             var main = asm.DefineDynamicModule("main");
-            var writer = BaseMessageWriter.Build(counter, l => messageId, new[] {typeof (A)}, main);
+            var writer = MessageWriterBuilder.Build(counter, l => messageId, new[] {typeof (A)}, main);
 
             var e = new Envelope(new ActorId(1));
             var a = new A();

@@ -34,7 +34,7 @@ namespace RampUp.Benchmarks.Actors.Impl
                 new ActorRegistry(
                     new[]
                         { Tuple.Create(new ActorDescriptor(new Handler()), (IRingBuffer)_buffer, new ActorId(1)) });
-            var writer = BaseMessageWriter.Build(counter, registry.GetMessageTypeId, new[] { typeof(A) }, module);
+            var writer = MessageWriterBuilder.Build(counter, registry.GetMessageTypeId, new[] { typeof(A) }, module);
 
             _bus = new Bus(new ActorId(2), registry, 20, writer);
 

@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -25,13 +24,13 @@ namespace RampUp.Actors
         private readonly List<Func<Runner>> _registrations = new List<Func<Runner>>();
         private readonly HashSet<Type> _messageTypes = new HashSet<Type>();
         private readonly Dictionary<Runner, Bus> _runnerBusMap = new Dictionary<Runner, Bus>();
-        private readonly ConcurrentBag<Exception> _exceptionsThrown = new ConcurrentBag<Exception>();
         private long _messageTypePointerDiff;
         private IntLookup<int> _identifiers;
         private readonly List<ManyToOneRingBuffer> _buffers = new List<ManyToOneRingBuffer>();
         private RoundRobinThreadAffinedTaskScheduler _scheduler;
         private readonly ManualResetEventSlim _end = new ManualResetEventSlim();
         private CancellationTokenSource _source;
+        private AggregateException _exception;
 
         public ActorSystem Add<TActor>(TActor actor, Action<RegistrationContext<TActor>> register)
             where TActor : IActor
@@ -69,14 +68,14 @@ namespace RampUp.Actors
             return buffer;
         }
 
-        public void Start()
+        public void Start(Action<Exception> exceptionAction = null)
         {
             var module = AppDomain.CurrentDomain.DefineDynamicAssembly(
                 new AssemblyName("RampUp_MessageWriter_" + Guid.NewGuid()),
                 AssemblyBuilderAccess.Run).DefineDynamicModule("main");
 
             InitMessageTypesDictionary();
-            var writer = BaseMessageWriter.Build(_counter, GetMessageId, _messageTypes.ToArray(), module);
+            var writer = MessageWriterBuilder.Build(_counter, GetMessageId, _messageTypes.ToArray(), module);
 
             var runners = _registrations.Select(f => f()).ToList();
             if (_featureActors.Count > 0)
@@ -111,10 +110,10 @@ namespace RampUp.Actors
                     catch (TaskCanceledException)
                     {
                     }
-                    catch (Exception e)
+                    catch (Exception)
                     {
-                        _exceptionsThrown.Add(e);
                         _source.Cancel();
+                        throw;
                     }
                 }, token);
             }).ToArray();
@@ -126,6 +125,11 @@ namespace RampUp.Actors
                 foreach (var buffer in _buffers)
                 {
                     buffer.Dispose();
+                }
+                _exception = t.Exception;
+                if (t.Exception != null)
+                {
+                    exceptionAction?.Invoke(t.Exception);
                 }
                 _end.Set();
             });
@@ -149,13 +153,9 @@ namespace RampUp.Actors
             _source.Cancel();
             _end.Wait();
 
-            if (_exceptionsThrown.Count == 1)
+            if (_exception != null)
             {
-                throw _exceptionsThrown.First();
-            }
-            if (_exceptionsThrown.Count > 1)
-            {
-                throw new AggregateException(_exceptionsThrown);
+                throw _exception;
             }
         }
 
