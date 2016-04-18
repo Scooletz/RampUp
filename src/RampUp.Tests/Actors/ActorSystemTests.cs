@@ -11,10 +11,24 @@ namespace RampUp.Tests.Actors
         public void WhenExceptionActionPassed_ThenItShouldBeInvokedOnException()
         {
             var system = new ActorSystem();
-            system.Add(new ThrowingHandler(), ctx => { });
+            IBus bus = null;
+            system.Add(new ThrowingHandler(), ctx => { bus = ctx.Bus; });
             Exception ex = null;
-            system.Start(e => ex = e);
-            Assert.AreEqual(ThrowingHandler.Exception, ex);
+
+            var wait = new ManualResetEventSlim(false);
+
+            system.Start(e =>
+            {
+                ex = e;
+                wait.Set();
+            });
+
+            var msg = new Message();
+            bus.Publish(ref msg);
+
+            Assert.True(wait.Wait(TimeSpan.FromSeconds(10)));
+
+            ExceptionHelpers.ExceptionOrAggregateWithOne(ex, ThrowingHandler.Exception);
         }
 
         [Test]

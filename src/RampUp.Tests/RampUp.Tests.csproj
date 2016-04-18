@@ -63,7 +63,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Actors\BruceLeePingPong.cs" />
+    <Compile Include="Actors\ActorSystemTests.cs" />
     <Compile Include="Actors\FakeMessageIdGenerator.cs" />
     <Compile Include="Actors\Impl\ActorRegistryTests.cs" />
     <Compile Include="Actors\Impl\BusTests.cs" />
@@ -82,6 +82,7 @@
     <Compile Include="Buffers\StreamTests.cs" />
     <Compile Include="Actors\GuidMessageReaderWriter.cs" />
     <Compile Include="Buffers\UnsafeBufferTests.cs" />
+    <Compile Include="ExceptionHelpers.cs" />
     <Compile Include="PaddedAttribute.cs" />
     <Compile Include="PerformanceTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
