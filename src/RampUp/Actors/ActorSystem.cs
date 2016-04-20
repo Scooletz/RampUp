@@ -28,9 +28,6 @@ namespace RampUp.Actors
         private IntLookup<int> _identifiers;
         private readonly List<ManyToOneRingBuffer> _buffers = new List<ManyToOneRingBuffer>();
         private RoundRobinThreadAffinedTaskScheduler _scheduler;
-        private readonly ManualResetEventSlim _end = new ManualResetEventSlim();
-        private CancellationTokenSource _source;
-        private AggregateException _exception;
 
         public ActorSystem Add<TActor>(TActor actor, Action<RegistrationContext<TActor>> register)
             where TActor : IActor
@@ -68,7 +65,7 @@ namespace RampUp.Actors
             return buffer;
         }
 
-        public void Start(Action<Exception> exceptionAction = null)
+        public Context Start(Action<Exception> exceptionAction = null)
         {
             var module = AppDomain.CurrentDomain.DefineDynamicAssembly(
                 new AssemblyName("RampUp_MessageWriter_" + Guid.NewGuid()),
@@ -90,8 +87,10 @@ namespace RampUp.Actors
                 kvp.Value.Init(GetId(index), registry, ThrowAfterNTrials, writer);
             }
 
-            _source = new CancellationTokenSource();
-            var token = _source.Token;
+            var source = new CancellationTokenSource();
+            var end = new ManualResetEventSlim();
+            var ctx = new Context(source, end, new Bus(new ActorId(0),registry, ThrowAfterNTrials, writer ));
+            var token = source.Token;
             _scheduler = new RoundRobinThreadAffinedTaskScheduler(runners.Count);
             var factory = new TaskFactory(_scheduler);
 
@@ -112,7 +111,7 @@ namespace RampUp.Actors
                     }
                     catch (Exception)
                     {
-                        _source.Cancel();
+                        source.Cancel();
                         throw;
                     }
                 }, token);
@@ -126,13 +125,15 @@ namespace RampUp.Actors
                 {
                     buffer.Dispose();
                 }
-                _exception = t.Exception;
+                ctx.Exception = t.Exception;
                 if (t.Exception != null)
                 {
                     exceptionAction?.Invoke(t.Exception);
                 }
-                _end.Set();
+                end.Set();
             });
+
+            return ctx;
         }
 
         private static ActorRegistry CreateRegistry(IEnumerable<Runner> runners)
@@ -146,17 +147,6 @@ namespace RampUp.Actors
         private static ActorId GetId(int index)
         {
             return new ActorId((byte) (index + 1));
-        }
-
-        public void Stop()
-        {
-            _source.Cancel();
-            _end.Wait();
-
-            if (_exception != null)
-            {
-                throw _exception;
-            }
         }
 
         private void InitMessageTypesDictionary()
@@ -221,6 +211,38 @@ namespace RampUp.Actors
                 Actors.AddRange(feature.GetCoexistingActors(Actor));
                 configure(Actor, feature);
                 return this;
+            }
+        }
+
+        public sealed class Context
+        {
+            private readonly CancellationTokenSource _source;
+            private readonly ManualResetEventSlim _end;
+            private readonly IBus _bus;
+            internal Exception Exception;
+
+            public Context(CancellationTokenSource source, ManualResetEventSlim end, IBus bus)
+            {
+                _source = source;
+                _end = end;
+                _bus = bus;
+            }
+
+            public void Publish<TMessage>(ref TMessage msg)
+                where TMessage : struct
+            {
+                _bus.Publish(ref msg);
+            }
+
+            public void Stop()
+            {
+                _source.Cancel();
+                _end.Wait();
+
+                if (Exception != null)
+                {
+                    throw Exception;
+                }
             }
         }
     }

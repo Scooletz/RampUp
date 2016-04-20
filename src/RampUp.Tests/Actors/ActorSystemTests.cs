@@ -60,21 +60,21 @@ namespace RampUp.Tests.Actors
             public static void Test()
             {
                 var system = new ActorSystem();
-                IBus bus = null;
-
                 var pingPong = new CountdownEvent(PingPongCount);
 
                 var bruce = new Bruce(pingPong);
                 var lee = new Lee(pingPong);
-                system.Add(bruce, ctx => { bus = ctx.Actor.Bus = ctx.Bus; });
+
+                system.Add(bruce, ctx => { ctx.Actor.Bus = ctx.Bus; });
                 system.Add(lee, ctx => { ctx.Actor.Bus = ctx.Bus; });
-                system.Start();
+
+                var c = system.Start();
 
                 var p = new Pong();
-                bus.Publish(ref p);
+                c.Publish(ref p);
 
                 var ended = pingPong.Wait(TimeSpan.FromSeconds(10));
-                system.Stop();
+                c.Stop();
 
                 Assert.True(ended, "Bruce/Lee didn't ping/pong");
             }

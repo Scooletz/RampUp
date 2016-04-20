@@ -20,19 +20,18 @@ public class Program
     public static void Main()
     {
         var system = new ActorSystem();
-        IBus bus = null;
 
-        system.Add(new Bruce(), ctx => { bus = ctx.Actor.Bus = ctx.Bus; });
+        system.Add(new Bruce(), ctx => { ctx.Actor.Bus = ctx.Bus; });
         system.Add(new Lee(), ctx => { ctx.Actor.Bus = ctx.Bus; });
 
-        system.Start();
+        var c = system.Start();
 
         var p = new Pong();
-        bus.Publish(ref p); // pong as Bruce
+        c.Publish(ref p); // start with Pong
 
         // ... later
 
-        system.Stop();
+        c.Stop();
     }
 }
 
