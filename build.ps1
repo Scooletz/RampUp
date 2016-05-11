@@ -7,7 +7,7 @@ function Get-Version {
 }
 
 Task Compile -Depends Clear, Restore {
-	exec {msbuild $path /t:Rebuild /p:Configuration=Release /verbosity:normal /m}
+	exec {& "C:\Program Files (x86)\MSBuild\14.0\Bin\MSBuild.exe" $path /t:Rebuild /p:Configuration=Release /verbosity:normal /m}
 
     if ($lastexitcode -ne 0) {
         throw "Build failed"
