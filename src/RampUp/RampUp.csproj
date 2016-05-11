@@ -81,6 +81,8 @@
     <Compile Include="Atomics\AtomicInt.cs" />
     <Compile Include="Atomics\AtomicLong.cs" />
     <Compile Include="Buffers\ByteChunk.cs" />
+    <Compile Include="Buffers\MemoryMappedUnsafeBuffer.cs" />
+    <Compile Include="Buffers\ReadonlyByteChunkStream.cs" />
     <Compile Include="Buffers\ByteSlice.cs" />
     <Compile Include="Buffers\Extensions.cs" />
     <Compile Include="Buffers\IndexCalculator.cs" />
@@ -98,6 +100,7 @@
     <Compile Include="Ring\ManyToOneRingBuffer.cs" />
     <Compile Include="Ring\MessageHandler.cs" />
     <Compile Include="Ring\RingBufferDescriptor.cs" />
+    <Compile Include="Ring\RingBufferPoller.cs" />
     <Compile Include="Threading\RoundRobinThreadAffinedTaskScheduler.cs" />
     <Compile Include="Utils.cs" />
   </ItemGroup>
