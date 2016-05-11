@@ -1,3 +1,5 @@
+Framework "4.6"
+
 properties {
   $path = "src\RampUp.sln"
 }
@@ -7,7 +9,7 @@ function Get-Version {
 }
 
 Task Compile -Depends Clear, Restore {
-	exec {& "C:\Program Files (x86)\MSBuild\14.0\Bin\MSBuild.exe" $path /t:Rebuild /p:Configuration=Release /verbosity:normal /m}
+	exec {msbuild $path /t:Rebuild /p:Configuration=Release /verbosity:normal /m /nr:false}
 
     if ($lastexitcode -ne 0) {
         throw "Build failed"
