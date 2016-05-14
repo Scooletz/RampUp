@@ -7,14 +7,12 @@ using static RampUp.Ring.RingBufferDescriptor;
 namespace RampUp.Ring
 {
     [Padded]
-    public sealed class ManyToOneRingBuffer : IRingBuffer, IDisposable
+    public sealed class OneToOneRingBuffer : IRingBuffer, IDisposable
     {
         /// <summary>
         /// Message type is padding to prevent fragmentation in the buffer
         /// </summary>
         public const int PaddingMsgTypeId = -1;
-
-        private const int InsufficientCapacity = -2;
 
         private readonly IUnsafeBuffer _buffer;
 
@@ -26,7 +24,7 @@ namespace RampUp.Ring
 
         private readonly int _mask;
 
-        public ManyToOneRingBuffer(IUnsafeBuffer buffer)
+        public OneToOneRingBuffer(IUnsafeBuffer buffer)
         {
             _buffer = buffer;
 
@@ -48,31 +46,6 @@ namespace RampUp.Ring
         public int Capacity { get; }
 
         public int MaximumMessageLength { get; }
-
-        public bool Write(int messageTypeId, ByteChunk chunk)
-        {
-            ValidateMessageTypeId(messageTypeId);
-            ValidateLength(chunk);
-
-            var isSuccessful = false;
-
-            var recordLength = chunk.Length + HeaderLength;
-            var requiredCapacity = recordLength.AlignToMultipleOf(RecordAlignment);
-            var recordIndex = ClaimCapacity(requiredCapacity);
-
-            if (InsufficientCapacity != recordIndex)
-            {
-                var index = _buffer.GetAtomicLong(recordIndex);
-                index.VolatileWrite(MakeHeader(-recordLength, messageTypeId));
-                var offset = EncodedMsgOffset(recordIndex);
-                _buffer.Write(offset, chunk);
-                _buffer.GetAtomicInt(recordIndex).VolatileWrite(recordLength);
-
-                isSuccessful = true;
-            }
-
-            return isSuccessful;
-        }
 
         public int Read(MessageHandler handler, int messageProcessingLimit)
         {
@@ -125,65 +98,70 @@ namespace RampUp.Ring
             return messagesRead;
         }
 
-        private int ClaimCapacity(int requiredCapacity)
+        public bool Write(int messageTypeId, ByteChunk chunk)
         {
-            var head = _headCache.VolatileRead();
+            ValidateMessageTypeId(messageTypeId);
+            ValidateLength(chunk);
 
-            long tail;
-            int tailIndex;
-            int padding;
-            do
+            var recordLength = chunk.Length + HeaderLength;
+            var requiredCapacity = recordLength.AlignToMultipleOf(RecordAlignment);
+
+            var head = _headCache.Read();
+            var tail = _tail.Read();
+            var availableCapacity = Capacity - (int)(tail - head);
+
+            if (requiredCapacity > availableCapacity)
             {
-                tail = _tail.VolatileRead();
-                var availableCapacity = Capacity - (int)(tail - head);
+                head = _head.VolatileRead();
 
-                if (requiredCapacity > availableCapacity)
+                if (requiredCapacity > Capacity - (int)(tail - head))
+                {
+                    return false;
+                }
+
+                _headCache.Write(head);
+            }
+
+            var padding = 0;
+            var recordIndex = (int)tail & _mask;
+            var toBufferEndLength = Capacity - recordIndex;
+
+            if (requiredCapacity > toBufferEndLength)
+            {
+                var headIndex = (int)head & _mask;
+
+                if (requiredCapacity > headIndex)
                 {
                     head = _head.VolatileRead();
-
-                    if (requiredCapacity > Capacity - (int)(tail - head))
-                    {
-                        return InsufficientCapacity;
-                    }
-
-                    _headCache.VolatileWrite(head);
-                }
-
-                padding = 0;
-                tailIndex = (int)tail & _mask;
-                var toBufferEndLength = Capacity - tailIndex;
-
-                if (requiredCapacity > toBufferEndLength)
-                {
-                    var headIndex = (int)head & _mask;
-
+                    headIndex = (int)head & _mask;
                     if (requiredCapacity > headIndex)
                     {
-                        head = _head.VolatileRead();
-                        headIndex = (int)head & _mask;
-                        if (requiredCapacity > headIndex)
-                        {
-                            return InsufficientCapacity;
-                        }
-
-                        _headCache.VolatileWrite(head);
+                        return false;
                     }
 
-                    padding = toBufferEndLength;
+                    _headCache.Write(head);
                 }
-            } while (_tail.CompareExchange(tail + requiredCapacity + padding, tail) != tail);
+
+                padding = toBufferEndLength;
+            }
 
             if (0 != padding)
             {
-                var tailAtomic = _buffer.GetAtomicLong(tailIndex);
+                var tailAtomic = _buffer.GetAtomicLong(recordIndex);
                 tailAtomic.VolatileWrite(MakeHeader(padding, PaddingMsgTypeId));
-                tailIndex = 0;
+                recordIndex = 0;
             }
 
-            return tailIndex;
-        }
+            var offset = EncodedMsgOffset(recordIndex);
+            _buffer.Write(offset, chunk);
 
-        // ReSharper disable once UnusedParameter.Local
+            var index = _buffer.GetAtomicLong(recordIndex);
+            index.VolatileWrite(MakeHeader(recordLength, messageTypeId));
+
+            _tail.VolatileWrite(tail + requiredCapacity + padding);
+
+            return true;
+        }
 
         private void ValidateLength(ByteChunk chunk)
         {

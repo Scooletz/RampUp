@@ -10,9 +10,9 @@ using RampUp.Buffers;
 using RampUp.Ring;
 using RampUp.Tests.Buffers;
 
-namespace RampUp.Tests._Ring
+namespace RampUp.Tests.Ring
 {
-    [Ignore("CodeCop is not intercepting properly")]
+    [Category(Categories.CodeCop)]
     public unsafe class ManyToOneBufferTests : IDisposable
     {
         private const int MessageTypeId = 7;
@@ -40,7 +40,7 @@ namespace RampUp.Tests._Ring
             Cop.AsFluent();
 
             // long
-            var l = typeof (AtomicLong);
+            var l = typeof(AtomicLong);
             l.GetMethod("Read").Override(c => Mocks.AtomicLong.Read(GetAtomicLongPtr(c)));
             l.GetMethod("Write").Override(c =>
             {
@@ -60,7 +60,7 @@ namespace RampUp.Tests._Ring
                             (long) c.Parameters[1].Value));
 
             // int
-            var i = typeof (AtomicInt);
+            var i = typeof(AtomicInt);
             i.GetMethod("Read").Override(c => Mocks.AtomicInt.Read(GetAtomicIntPtr(c)));
             i.GetMethod("Write").Override(c =>
             {
@@ -93,7 +93,7 @@ namespace RampUp.Tests._Ring
                 "CompareExchange"
             };
 
-            foreach (var method in new[] {typeof (AtomicLong), typeof (AtomicInt)}.SelectMany(t => t.GetMethods()))
+            foreach (var method in new[] {typeof(AtomicLong), typeof(AtomicInt)}.SelectMany(t => t.GetMethods()))
             {
                 if (toReset.Contains(method.Name))
                 {
@@ -138,7 +138,7 @@ namespace RampUp.Tests._Ring
         {
             const int length = 8;
             var recordLength = length + RingBufferDescriptor.HeaderLength;
-            var alignedRecordLength = recordLength.AlignToMultipleOf(Native.CacheLineSize);
+            var alignedRecordLength = recordLength.AlignToMultipleOf(RingBufferDescriptor.RecordAlignment);
 
             const int headValue = 0;
             _atomicLong.VolatileRead(Arg.Is(Head)).Returns(headValue);
@@ -224,7 +224,7 @@ namespace RampUp.Tests._Ring
                 // padding first
                 _atomicLong.VolatileWrite(new IntPtr(tail),
                     RingBufferDescriptor.MakeHeader(RingBufferDescriptor.HeaderLength,
-                        RingBufferDescriptor.PaddingMsgTypeId));
+                        ManyToOneRingBuffer.PaddingMsgTypeId));
 
                 // then write from the start
                 _atomicLong.VolatileWrite(new IntPtr(0), RingBufferDescriptor.MakeHeader(-recordLength, MessageTypeId));
@@ -256,7 +256,7 @@ namespace RampUp.Tests._Ring
                 // padding first
                 _atomicLong.VolatileWrite(new IntPtr(tail),
                     RingBufferDescriptor.MakeHeader(RingBufferDescriptor.HeaderLength,
-                        RingBufferDescriptor.PaddingMsgTypeId));
+                        ManyToOneRingBuffer.PaddingMsgTypeId));
 
                 // message then
                 _atomicLong.VolatileWrite(new IntPtr(0), RingBufferDescriptor.MakeHeader(-recordLength, MessageTypeId));

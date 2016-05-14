@@ -6,11 +6,6 @@ namespace RampUp.Ring
     public class RingBufferDescriptor
     {
         /// <summary>
-        /// Message type is padding to prevent fragmentation in the buffer
-        /// </summary>
-        public static readonly int PaddingMsgTypeId = -1;
-
-        /// <summary>
         /// Offset within the record at which the record length field begins.
         /// </summary>
         public static readonly int LengthOffset = 0;

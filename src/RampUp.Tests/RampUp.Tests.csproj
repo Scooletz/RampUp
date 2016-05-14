@@ -82,11 +82,13 @@
     <Compile Include="Buffers\StreamTests.cs" />
     <Compile Include="Actors\GuidMessageReaderWriter.cs" />
     <Compile Include="Buffers\UnsafeBufferTests.cs" />
+    <Compile Include="Categories.cs" />
     <Compile Include="ExceptionHelpers.cs" />
     <Compile Include="PaddedAttribute.cs" />
     <Compile Include="PerformanceTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="_Ring\ManyToOneBufferTests.cs" />
+    <Compile Include="Ring\OneToOneBufferTests.cs" />
+    <Compile Include="Ring\ManyToOneBufferTests.cs" />
     <Compile Include="UtilsTests.cs" />
   </ItemGroup>
   <ItemGroup>

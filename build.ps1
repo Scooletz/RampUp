@@ -33,7 +33,7 @@ Task Clear {
 }
 
 Task Tests {
-    src\packages\NUnit.Runners.2.6.4\tools\nunit-console.exe src\RampUp.Tests\bin\Release\RampUp.Tests.dll
+    src\packages\NUnit.Runners.2.6.4\tools\nunit-console.exe src\RampUp.Tests\bin\Release\RampUp.Tests.dll /exclude:CodeCop /result:TestResult.xml /framework:net-4.6.1
     
     if ($lastexitcode -ne 0) {
         throw "Tests failed"
