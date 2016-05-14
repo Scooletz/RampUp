@@ -97,6 +97,7 @@
     <Compile Include="Ring\IRingBuffer.cs" />
     <Compile Include="Ring\ManyToOneRingBuffer.cs" />
     <Compile Include="Ring\MessageHandler.cs" />
+    <Compile Include="Ring\OneToOneRingBuffer.cs" />
     <Compile Include="Ring\RingBufferDescriptor.cs" />
     <Compile Include="Threading\RoundRobinThreadAffinedTaskScheduler.cs" />
     <Compile Include="Utils.cs" />
