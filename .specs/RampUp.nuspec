@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package>
+  <metadata>
+    <id>RampUp</id>
+    <title>RampUp</title>
+    <version>1.0.1.0</version>
+    <authors>Scooletz</authors>
+    <owners>Scooletz</owners>
+    <summary>Provides a no-alloc low latency primitives to build performant .NET system</summary>
+    <description>RampUp is a .NET library providing a performant low/no-alloc environment for demanding systems. It's based on understanding the modern hardware and applying the mechanical sympathy.</description>
+    <projectUrl>https://github.com/Scooletz/RampUp</projectUrl>
+    <licenseUrl>https://github.com/Scooletz/RampUp/blob/master/LICENSE</licenseUrl>
+    <tags>RampUp allocations queue volatile interlocked</tags>
+    <iconUrl>https://raw.githubusercontent.com/Scooletz/RampUp/master/icons/package_icon.png</iconUrl>
+    <language>en-US</language>
+    <releaseNotes>
+    </releaseNotes>
+  </metadata>
+  <files>
+    <file src="\src\RampUp\bin\Release\RampUp.dll" target="lib\net45" />
+  </files>
+</package>

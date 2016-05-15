@@ -42,7 +42,7 @@ Task Tests {
 
 Task Pack {
     $major_minor = Get-Version
-    $version = $major_minor + "." + $buildNo + "-" + $branch
+    $version = $major_minor + "." + $buildNo + "-prerelease"
 
     Get-ChildItem .\.specs -Filter *.nuspec | foreach ($_) { 
         $tempFileName = $_.name + "_temp.nuspec"
@@ -52,13 +52,13 @@ Task Pack {
 
         [xml] $spec = gc $tempFileName
         $spec.package.metadata.version = $version
-        $spec.package.metadata.tags = $tags
+        # $spec.package.metadata.tags = $tags
 
         Write-Host $tempFile
         $spec.Save($tempFile.FullName)
 
         # run packaging
-        exec { .\.nuget\NuGet.exe pack $tempFile.FullName -Verbosity normal -NoPackageAnalysis }
+        exec { .tools\nuget\NuGet.exe pack $tempFile.FullName -Verbosity normal -NoPackageAnalysis }
         
         # remove temp nuspec
         ri $tempFile.FullName
