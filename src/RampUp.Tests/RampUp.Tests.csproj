@@ -78,6 +78,7 @@
     <Compile Include="Actors\OneSegmentOnlyPool.cs" />
     <Compile Include="Actors\Timer\TimerWheelTests.cs" />
     <Compile Include="Buffers\IndexCalculatorTests.cs" />
+    <Compile Include="Buffers\ManagedUnsafeBufferTests.cs" />
     <Compile Include="Buffers\Mocks.cs" />
     <Compile Include="Buffers\StreamTests.cs" />
     <Compile Include="Actors\GuidMessageReaderWriter.cs" />
