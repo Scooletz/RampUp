@@ -263,8 +263,18 @@ namespace RampUp.Tests.Ring
             const long head = 0L;
             _atomicLong.Read(Head).Returns(head);
 
-            var handler = default(MessageHandler);
-            var read = _ringBuffer.Read(handler, 100);
+            var read = _ringBuffer.Read(default(MessageHandler), 100);
+
+            Assert.AreEqual(0, read);
+        }
+
+        [Test]
+        public void ShouldReadNothingRawFromEmptyBuffer()
+        {
+            const long head = 0L;
+            _atomicLong.Read(Head).Returns(head);
+
+            var read = _ringBuffer.ReadRaw(default(RawMessageChunkHandler), 1024*1024);
 
             Assert.AreEqual(0, read);
         }
@@ -308,6 +318,35 @@ namespace RampUp.Tests.Ring
             var counter = 0;
             MessageHandler h = (id, chunk) => counter++;
             var messagesRead = _ringBuffer.Read(h, 3);
+
+            Assert.AreEqual(2, messagesRead);
+            Assert.AreEqual(2, counter);
+
+            Received.InOrder(() =>
+            {
+                _buffer.Received(1).ZeroMemory(headIndex, alignedRecordLength*2);
+                _atomicLong.VolatileWrite(Head, tail);
+            });
+        }
+
+        [Test]
+        public void ShouldReadTwoMessagesRaw()
+        {
+            const int msgLength = 16;
+            var recordLength = RingBufferDescriptor.HeaderLength + msgLength;
+            var alignedRecordLength = recordLength.AlignToMultipleOf(RingBufferDescriptor.RecordAlignment);
+            long tail = alignedRecordLength*2;
+            const long head = 0L;
+            const int headIndex = (int) head;
+
+            _atomicLong.Read(Head).Returns(head);
+            var makeHeader = RingBufferDescriptor.MakeHeader(recordLength, MessageTypeId);
+            _atomicLong.VolatileRead(new IntPtr(headIndex)).Returns(makeHeader);
+            _atomicLong.VolatileRead(new IntPtr(headIndex + alignedRecordLength)).Returns(makeHeader);
+
+            var counter = 0;
+            MessageHandler h = (id, chunk) => counter++;
+            var messagesRead = _ringBuffer.ReadRaw(h.ToRaw(), 100000);
 
             Assert.AreEqual(2, messagesRead);
             Assert.AreEqual(2, counter);

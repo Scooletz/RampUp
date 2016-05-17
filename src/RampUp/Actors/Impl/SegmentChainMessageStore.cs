@@ -75,7 +75,12 @@ namespace RampUp.Actors.Impl
 
         int IRingBuffer.Read(MessageHandler handler, int messageProcessingLimit)
         {
-            throw new System.NotImplementedException();
+            throw new NotImplementedException();
+        }
+
+        public int ReadRaw(RawMessageChunkHandler handler, int maxSizeToProcess)
+        {
+            throw new NotImplementedException();
         }
 
         bool IRingBuffer.Write(int messagetypeid, ByteChunk chunk)
