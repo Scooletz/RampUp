@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using Padded.Fody;
 using RampUp.Atomics;
 using RampUp.Buffers;
@@ -32,7 +33,7 @@ namespace RampUp.Ring
             Capacity = buffer.Size - TrailerLength;
 
             _mask = Capacity - 1;
-            MaximumMessageLength = Capacity / 8;
+            MaximumMessageLength = Capacity/8;
             _tail = buffer.GetAtomicLong(Capacity + TailPositionOffset);
             _headCache = buffer.GetAtomicLong(Capacity + HeadCachePositionOffset);
             _head = buffer.GetAtomicLong(Capacity + HeadPositionOffset);
@@ -55,7 +56,7 @@ namespace RampUp.Ring
 
             var bytesRead = 0;
 
-            var headIndex = (int)head & _mask;
+            var headIndex = (int) head & _mask;
             var contiguousBlockLength = Capacity - headIndex;
 
             try
@@ -105,7 +106,7 @@ namespace RampUp.Ring
 
             var bytesRead = 0;
 
-            var headIndex = (int)head & _mask;
+            var headIndex = (int) head & _mask;
             var maxLength = Math.Min(Capacity - headIndex, maxSizeToProcess);
 
             try
@@ -160,13 +161,13 @@ namespace RampUp.Ring
 
             var head = _headCache.Read();
             var tail = _tail.Read();
-            var availableCapacity = Capacity - (int)(tail - head);
+            var availableCapacity = Capacity - (int) (tail - head);
 
             if (requiredCapacity > availableCapacity)
             {
                 head = _head.VolatileRead();
 
-                if (requiredCapacity > Capacity - (int)(tail - head))
+                if (requiredCapacity > Capacity - (int) (tail - head))
                 {
                     return false;
                 }
@@ -175,17 +176,17 @@ namespace RampUp.Ring
             }
 
             var padding = 0;
-            var recordIndex = (int)tail & _mask;
+            var recordIndex = (int) tail & _mask;
             var toBufferEndLength = Capacity - recordIndex;
 
             if (requiredCapacity > toBufferEndLength)
             {
-                var headIndex = (int)head & _mask;
+                var headIndex = (int) head & _mask;
 
                 if (requiredCapacity > headIndex)
                 {
                     head = _head.VolatileRead();
-                    headIndex = (int)head & _mask;
+                    headIndex = (int) head & _mask;
                     if (requiredCapacity > headIndex)
                     {
                         return false;
@@ -213,6 +214,39 @@ namespace RampUp.Ring
             _tail.VolatileWrite(tail + requiredCapacity + padding);
 
             return true;
+        }
+
+        private class WrappingStream : Stream
+        {
+            public override void Flush()
+            {
+            }
+
+            public override long Seek(long offset, SeekOrigin origin)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override void SetLength(long value)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override int Read(byte[] buffer, int offset, int count)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override void Write(byte[] buffer, int offset, int count)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override bool CanRead => true;
+            public override bool CanSeek => false;
+            public override bool CanWrite => true;
+            public override long Length { get; }
+            public override long Position { get; set; }
         }
 
         private void ValidateLength(ByteChunk chunk)

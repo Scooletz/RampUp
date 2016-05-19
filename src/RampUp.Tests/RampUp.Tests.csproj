@@ -85,6 +85,7 @@
     <Compile Include="Buffers\UnsafeBufferTests.cs" />
     <Compile Include="Categories.cs" />
     <Compile Include="ExceptionHelpers.cs" />
+    <Compile Include="MessageHandlerExtensions.cs" />
     <Compile Include="PaddedAttribute.cs" />
     <Compile Include="PerformanceTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
