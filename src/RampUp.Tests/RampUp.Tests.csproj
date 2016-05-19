@@ -78,12 +78,14 @@
     <Compile Include="Actors\OneSegmentOnlyPool.cs" />
     <Compile Include="Actors\Timer\TimerWheelTests.cs" />
     <Compile Include="Buffers\IndexCalculatorTests.cs" />
+    <Compile Include="Buffers\ManagedUnsafeBufferTests.cs" />
     <Compile Include="Buffers\Mocks.cs" />
     <Compile Include="Buffers\StreamTests.cs" />
     <Compile Include="Actors\GuidMessageReaderWriter.cs" />
     <Compile Include="Buffers\UnsafeBufferTests.cs" />
     <Compile Include="Categories.cs" />
     <Compile Include="ExceptionHelpers.cs" />
+    <Compile Include="MessageHandlerExtensions.cs" />
     <Compile Include="PaddedAttribute.cs" />
     <Compile Include="PerformanceTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

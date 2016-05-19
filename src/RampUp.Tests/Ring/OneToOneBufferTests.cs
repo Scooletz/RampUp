@@ -4,6 +4,8 @@ using System.Linq;
 using CodeCop.Core;
 using CodeCop.Core.Fluent;
 using NSubstitute;
+using NSubstitute.Core;
+using NSubstitute.ReturnsExtensions;
 using NUnit.Framework;
 using RampUp.Atomics;
 using RampUp.Buffers;
@@ -203,10 +205,9 @@ namespace RampUp.Tests.Ring
         public void ShouldInsertPaddingRecordPlusMessageOnBufferWrap()
         {
             const int length = 200;
-            var recordLength = length + RingBufferDescriptor.HeaderLength;
-            var alignedRecordLength = recordLength.AlignToMultipleOf(RingBufferDescriptor.RecordAlignment);
-            long tail = Capacity - RingBufferDescriptor.HeaderLength;
-            var head = tail - RingBufferDescriptor.RecordAlignment*4;
+            const int recordLength = length + RingBufferDescriptor.HeaderLength;
+            const long tail = Capacity - RingBufferDescriptor.HeaderLength;
+            const long head = tail - RingBufferDescriptor.RecordAlignment*4;
 
             _atomicLong.VolatileRead(Head).Returns(head);
             _atomicLong.Read(Tail).Returns(tail);
@@ -232,10 +233,10 @@ namespace RampUp.Tests.Ring
         public void ShouldInsertPaddingRecordPlusMessageOnBufferWrapWithHeadEqualToTail()
         {
             const int length = 200;
-            var recordLength = length + RingBufferDescriptor.HeaderLength;
+            const int recordLength = length + RingBufferDescriptor.HeaderLength;
             var alignedRecordLength = recordLength.AlignToMultipleOf(RingBufferDescriptor.RecordAlignment);
-            var tail = Capacity - RingBufferDescriptor.HeaderLength;
-            var head = tail;
+            const int tail = Capacity - RingBufferDescriptor.HeaderLength;
+            const int head = tail;
 
             _atomicLong.VolatileRead(Head).Returns(head);
             _atomicLong.Read(Tail).Returns(tail);
@@ -263,8 +264,18 @@ namespace RampUp.Tests.Ring
             const long head = 0L;
             _atomicLong.Read(Head).Returns(head);
 
-            var handler = default(MessageHandler);
-            var read = _ringBuffer.Read(handler, 100);
+            var read = _ringBuffer.Read(default(MessageHandler), 100);
+
+            Assert.AreEqual(0, read);
+        }
+
+        [Test]
+        public void ShouldReadNothingRawFromEmptyBuffer()
+        {
+            const long head = 0L;
+            _atomicLong.Read(Head).Returns(head);
+
+            var read = _ringBuffer.ReadRaw(default(RawMessageChunkHandler), 1024*1024);
 
             Assert.AreEqual(0, read);
         }
@@ -308,6 +319,36 @@ namespace RampUp.Tests.Ring
             var counter = 0;
             MessageHandler h = (id, chunk) => counter++;
             var messagesRead = _ringBuffer.Read(h, 3);
+
+            Assert.AreEqual(2, messagesRead);
+            Assert.AreEqual(2, counter);
+
+            Received.InOrder(() =>
+            {
+                _buffer.Received(1).ZeroMemory(headIndex, alignedRecordLength*2);
+                _atomicLong.VolatileWrite(Head, tail);
+            });
+        }
+
+        [Test]
+        [Ignore("NSubstitute does not support returning byte*, hence this test fails.")]
+        public void ShouldReadTwoMessagesRaw()
+        {
+            const int msgLength = 16;
+            var recordLength = RingBufferDescriptor.HeaderLength + msgLength;
+            var alignedRecordLength = recordLength.AlignToMultipleOf(RingBufferDescriptor.RecordAlignment);
+            long tail = alignedRecordLength*2;
+            const long head = 0L;
+            const int headIndex = (int) head;
+
+            _atomicLong.Read(Head).Returns(head);
+            var makeHeader = RingBufferDescriptor.MakeHeader(recordLength, MessageTypeId);
+            _atomicLong.VolatileRead(new IntPtr(headIndex)).Returns(makeHeader);
+            _atomicLong.VolatileRead(new IntPtr(headIndex + alignedRecordLength)).Returns(makeHeader);
+
+            var counter = 0;
+            MessageHandler h = (id, chunk) => counter++;
+            var messagesRead = _ringBuffer.ReadRaw(h.ToRaw(), 100000);
 
             Assert.AreEqual(2, messagesRead);
             Assert.AreEqual(2, counter);

@@ -10,15 +10,14 @@ namespace RampUp.Buffers
     /// </summary>
     public sealed unsafe class UnsafeBuffer : IUnsafeBuffer
     {
-        private readonly UIntPtr _size;
         private readonly UIntPtr _allocated;
 
         public UnsafeBuffer(int size)
         {
             Size = size;
-            _size = (UIntPtr) size.AlignToMultipleOf((int) Native.Info.AllocationGranularity);
+            var toAlloc = (UIntPtr) size.AlignToMultipleOf((int) Native.Info.AllocationGranularity);
 
-            _allocated = Native.VirtualAlloc(UIntPtr.Zero, _size,
+            _allocated = Native.VirtualAlloc(UIntPtr.Zero, toAlloc,
                 Native.AllocationType.Commit | Native.AllocationType.Reserve,
                 Native.MemoryProtection.ReadWrite);
             RawBytes = (byte*) _allocated;

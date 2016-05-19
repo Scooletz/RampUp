@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using Padded.Fody;
 using RampUp.Atomics;
 using RampUp.Buffers;
@@ -32,7 +33,7 @@ namespace RampUp.Ring
             Capacity = buffer.Size - TrailerLength;
 
             _mask = Capacity - 1;
-            MaximumMessageLength = Capacity / 8;
+            MaximumMessageLength = Capacity/8;
             _tail = buffer.GetAtomicLong(Capacity + TailPositionOffset);
             _headCache = buffer.GetAtomicLong(Capacity + HeadCachePositionOffset);
             _head = buffer.GetAtomicLong(Capacity + HeadPositionOffset);
@@ -55,7 +56,7 @@ namespace RampUp.Ring
 
             var bytesRead = 0;
 
-            var headIndex = (int)head & _mask;
+            var headIndex = (int) head & _mask;
             var contiguousBlockLength = Capacity - headIndex;
 
             try
@@ -82,7 +83,8 @@ namespace RampUp.Ring
                     ++messagesRead;
                     unsafe
                     {
-                        handler(messageTypeId, new ByteChunk(_buffer.RawBytes + recordIndex + HeaderLength, recordLength - HeaderLength));
+                        handler(messageTypeId,
+                            new ByteChunk(_buffer.RawBytes + recordIndex + HeaderLength, recordLength - HeaderLength));
                     }
                 }
             }
@@ -98,6 +100,57 @@ namespace RampUp.Ring
             return messagesRead;
         }
 
+        public int ReadRaw(RawMessageChunkHandler handler, int maxSizeToProcess)
+        {
+            var head = _head.Read();
+
+            var bytesRead = 0;
+
+            var headIndex = (int) head & _mask;
+            var maxLength = Math.Min(Capacity - headIndex, maxSizeToProcess);
+
+            try
+            {
+                while (bytesRead < maxLength)
+                {
+                    var recordIndex = headIndex + bytesRead;
+                    var header = _buffer.GetAtomicLong(recordIndex).VolatileRead();
+
+                    var recordLength = RecordLength(header);
+                    if (recordLength <= 0)
+                    {
+                        break;
+                    }
+
+                    bytesRead += recordLength.AlignToMultipleOf(RecordAlignment);
+
+                    var messageTypeId = MessageTypeId(header);
+                    if (PaddingMsgTypeId == messageTypeId)
+                    {
+                        break;
+                    }
+                }
+                if (bytesRead > 0)
+                {
+                    unsafe
+                    {
+                        var chunk = new RawMessageChunk(new ByteChunk(_buffer.RawBytes + headIndex, bytesRead));
+                        handler(ref chunk);
+                    }
+                }
+            }
+            finally
+            {
+                if (bytesRead != 0)
+                {
+                    _buffer.ZeroMemory(headIndex, bytesRead);
+                    _head.VolatileWrite(head + bytesRead);
+                }
+            }
+
+            return bytesRead;
+        }
+
         public bool Write(int messageTypeId, ByteChunk chunk)
         {
             ValidateMessageTypeId(messageTypeId);
@@ -108,13 +161,13 @@ namespace RampUp.Ring
 
             var head = _headCache.Read();
             var tail = _tail.Read();
-            var availableCapacity = Capacity - (int)(tail - head);
+            var availableCapacity = Capacity - (int) (tail - head);
 
             if (requiredCapacity > availableCapacity)
             {
                 head = _head.VolatileRead();
 
-                if (requiredCapacity > Capacity - (int)(tail - head))
+                if (requiredCapacity > Capacity - (int) (tail - head))
                 {
                     return false;
                 }
@@ -123,17 +176,17 @@ namespace RampUp.Ring
             }
 
             var padding = 0;
-            var recordIndex = (int)tail & _mask;
+            var recordIndex = (int) tail & _mask;
             var toBufferEndLength = Capacity - recordIndex;
 
             if (requiredCapacity > toBufferEndLength)
             {
-                var headIndex = (int)head & _mask;
+                var headIndex = (int) head & _mask;
 
                 if (requiredCapacity > headIndex)
                 {
                     head = _head.VolatileRead();
-                    headIndex = (int)head & _mask;
+                    headIndex = (int) head & _mask;
                     if (requiredCapacity > headIndex)
                     {
                         return false;
@@ -161,6 +214,39 @@ namespace RampUp.Ring
             _tail.VolatileWrite(tail + requiredCapacity + padding);
 
             return true;
+        }
+
+        private class WrappingStream : Stream
+        {
+            public override void Flush()
+            {
+            }
+
+            public override long Seek(long offset, SeekOrigin origin)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override void SetLength(long value)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override int Read(byte[] buffer, int offset, int count)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override void Write(byte[] buffer, int offset, int count)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override bool CanRead => true;
+            public override bool CanSeek => false;
+            public override bool CanWrite => true;
+            public override long Length { get; }
+            public override long Position { get; set; }
         }
 
         private void ValidateLength(ByteChunk chunk)

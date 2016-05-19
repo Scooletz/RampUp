@@ -86,6 +86,7 @@
     <Compile Include="Buffers\IndexCalculator.cs" />
     <Compile Include="Buffers\ISegmentPool.cs" />
     <Compile Include="Buffers\IUnsafeBuffer.cs" />
+    <Compile Include="Buffers\ManagedUnsafeBuffer.cs" />
     <Compile Include="Buffers\ReadonlySegmentStream.cs" />
     <Compile Include="Buffers\SingleThreadSegmentPool.cs" />
     <Compile Include="Buffers\Segment.cs" />
@@ -98,6 +99,8 @@
     <Compile Include="Ring\ManyToOneRingBuffer.cs" />
     <Compile Include="Ring\MessageHandler.cs" />
     <Compile Include="Ring\OneToOneRingBuffer.cs" />
+    <Compile Include="Ring\RawMessageChunk.cs" />
+    <Compile Include="Ring\RawMessageChunkHandler.cs" />
     <Compile Include="Ring\RingBufferDescriptor.cs" />
     <Compile Include="Threading\RoundRobinThreadAffinedTaskScheduler.cs" />
     <Compile Include="Utils.cs" />
